@@ -50,3 +50,7 @@ class Agent:
         elif self.startingStatus == "Offline":
             return t % (self.onlineDuration + self.offlineDuration) <= self.offlineDuration
         assert(False)
+
+    def addFollower(self, other: "Agent"):
+        "Appends agent to followers."
+        self.followers.append(other)
