@@ -26,7 +26,7 @@ def generateBAGraph(n=100, m=2, seed=None):
     G = nx.barabasi_albert_graph(n, m, seed=seed)
     D = nx.DiGraph((u, v) for u, v in G.edges() if u != v)
     removeSelfLoops(D)
-    plotGraph(D, f"Directed Barabási–Albert Model (n={n}, m={m}, seed={seed})")
+    # plotGraph(D, f"Directed Barabási–Albert Model (n={n}, m={m}, seed={seed})")
     return D
 
 # --- 2. Directed Holme–Kim Model ---
@@ -39,7 +39,7 @@ def generateHKGraph(n=100, m=3, p=0.3, seed=None):
     G = nx.powerlaw_cluster_graph(n, m, p, seed=seed)
     D = nx.DiGraph((u, v) for u, v in G.edges() if u != v)
     removeSelfLoops(D)
-    plotGraph(D, f"Directed Holme–Kim Model (n={n}, m={m}, p={p}, seed={seed})")
+    # plotGraph(D, f"Directed Holme–Kim Model (n={n}, m={m}, p={p}, seed={seed})")
     return D
 
 # --- 3. Directed Stochastic Block Model ---
@@ -57,7 +57,7 @@ def generateSBMGraph(
 
     G = nx.stochastic_block_model(sizes, probs, directed=True, seed=seed)
     removeSelfLoops(G)
-    plotGraph(G, f"Directed Stochastic Block Model (sizes={sizes}, seed={seed})")
+    # plotGraph(G, f"Directed Stochastic Block Model (sizes={sizes}, seed={seed})")
     return G
 
 if __name__ == "__main__":
