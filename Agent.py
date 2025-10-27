@@ -5,13 +5,28 @@ from Helper import BernoulliTrial
 
 class Agent:
     def __init__(self, beliefValue, steepness, tolerance, sharePropensity, onlineDuration, offlineDuration, startingStatus):
+        # value: -4 to 4 (int). if SBM based on cluster
         self.beliefValue = beliefValue
+
+        # gullible: (1, 8-9)    15% of popu
+        # normal: (2, 4-7)      65% of popu
+        # stubborn: (3-4, 1-3)  20% of popu
+
+        # value: 1 to 4 (int).   
         self.steepness = steepness
+        # value: 1 to 9 (int).  
         self.tolerance = tolerance
-        self.sharePropensity = sharePropensity
+
+        # likeliness to share. 
+        # value: 0-1 (float)
+        # 90% - lurker, 9% - occasional contributors, 1% highly active
+        self.sharePropensity = sharePropensity 
+
+        # ranging (1 to 8 hours)
         self.onlineDuration = onlineDuration
         self.offlineDuration = offlineDuration
         self.startingStatus = startingStatus
+        
         self.followers = []
         self.feedQueue = []
 
