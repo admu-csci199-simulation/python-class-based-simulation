@@ -1,6 +1,8 @@
 from math import e as EULER
 from Post import Post
 from Helper import BernoulliTrial
+import PostInteraction
+
 
 def generateAgents(
         n=Constants.N_AGENTS,
@@ -35,6 +37,8 @@ class Agent:
         self.followers = []
         self.feedQueue = []
 
+        self.interactionsDone = []
+
     def getDCCProbability(self, post: Post) -> float:
         "Get the Defensive Cognitive Cascade Probability given a Post."
         postBeliefValue = post.getBeliefValue()
@@ -55,13 +59,30 @@ class Agent:
         for agent in self.followers:
             agent.addPostToFeed(post)
     
-    def processFeed(self):
+    def processFeed(self, time: int):
         "Process all queued posts in feedQueue."
         for post in self.feedQueue:
             dccProbability = self.getDCCProbability(post)
             if BernoulliTrial(dccProbability):
-                self.sharePost(post)
+                self.acceptPost(time, post)
+
         self.feedQueue.clear()
+
+    def acceptPost(self, time: int, post: "Post"):
+        "Does all needed processes once an agent accepts the contents of a post"
+        self.sharePost(post)
+        # To do: all post interactions done by an agent will be stored in
+        # a struct inherent to that agent, we can then just collect this later
+        # on in order to do statistics
+        self.interactionsDone.append(PostInteraction(      
+                time,
+                self,
+                self.beliefValue,
+                post,
+                post.getInterestValue()
+            )
+        )
+        self.adjustBeliefValue(post.getBeliefValue())
 
     def getCurrentStatus(self, t: int):
         "Returns current status of the agent."
@@ -74,3 +95,8 @@ class Agent:
     def addFollower(self, other: "Agent"):
         "Appends agent to followers."
         self.followers.append(other)
+
+    # will it be just like this, or slowly transition
+    def adjustBeliefValue(self, newBeliefValue: int):
+        "Adjusts the agent belief value"
+        self.beliefValue = newBeliefValue 
