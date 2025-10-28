@@ -2,6 +2,11 @@ from math import e as EULER
 from Post import Post
 from Helper import BernoulliTrial
 
+def generateAgents(
+        n=Constants.N_AGENTS,
+        agentType = Constants.agentType
+    ):
+    pass
 
 class Agent:
     def __init__(self, beliefValue, steepness, tolerance, sharePropensity, onlineDuration, offlineDuration, startingStatus):
@@ -18,7 +23,7 @@ class Agent:
         self.tolerance = tolerance
 
         # likeliness to share. 
-        # value: 0-1 (float)
+        # value: 0-100 (int) 
         # 90% - lurker, 9% - occasional contributors, 1% highly active
         self.sharePropensity = sharePropensity 
 
