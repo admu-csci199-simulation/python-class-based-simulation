@@ -57,5 +57,6 @@ AGENT_SHARE_PROPENSITY = {
 }
 
 AGENT_DURATION = {
-    "range" : (1, 8) # hours, alternating between online and offline. cut if exceeds 48 hours
+    "online" : (1, 8),
+    "offline" : (2, 16)
 }

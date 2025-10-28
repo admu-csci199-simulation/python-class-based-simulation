@@ -1,39 +1,60 @@
 from math import e as EULER
 from Post import Post
 from Helper import BernoulliTrial
+import Constants
 
-def generateAgents(
-        n=Constants.N_AGENTS,
-        agentType = Constants.agentType
-    ):
-    pass
+def generateAgents():
+    agents = [Agent() for i in range(Constants.N_AGENTS)] 
+    
 
 class Agent:
-    def __init__(self, beliefValue, steepness, tolerance, sharePropensity, onlineDuration, offlineDuration, startingStatus):
-        # value: -4 to 4 (int). if SBM based on cluster
-        self.beliefValue = beliefValue
+    def __init__(self):
+        self.beliefValue = 0
 
-        # gullible: (1, 8-9)    15% of popu
-        # normal: (2, 4-7)      65% of popu
-        # stubborn: (3-4, 1-3)  20% of popu
-
-        # value: 1 to 4 (int).   
-        self.steepness = steepness
-        # value: 1 to 9 (int).  
-        self.tolerance = tolerance
-
-        # likeliness to share. 
-        # value: 0-100 (int) 
-        # 90% - lurker, 9% - occasional contributors, 1% highly active
-        self.sharePropensity = sharePropensity 
-
-        # ranging (1 to 8 hours)
-        self.onlineDuration = onlineDuration
-        self.offlineDuration = offlineDuration
-        self.startingStatus = startingStatus
+        self.steepness = 0
+        self.tolerance = 0
+        
+        self.sharePropensity = 0.0 
+        
+        self.onlineDuration = 0
+        self.offlineDuration = 0
+        self.startingStatus = ""
         
         self.followers = []
         self.feedQueue = []
+
+    def setBeliefValue(self, beliefValue):
+        """value: -4 to 4 (int). if SBM, this is based on cluster"""
+        self.beliefValue = beliefValue
+
+    def setSteepnessTolerance(self, steepness, tolerance):
+        """
+        gullible: (1, 8-9)    15% of popu
+        normal: (2, 4-7)      65% of popu
+        stubborn: (3-4, 1-3)  20% of popu
+
+        steepness value: 1 to 4 (int).
+        tolerance value: 1 to 9 (int).
+        """           
+        self.steepness = steepness
+        self.tolerance = tolerance
+
+    def setSharePropensity(self, sharePropensity):
+        """
+        likeliness to share. 
+        value: 0-100 (int) 
+        90% - lurker, 9% - occasional contributors, 1% highly active
+        """
+        self.sharePropensity = sharePropensity
+
+    def setActiveDuration(self, onlineDuration, offlineDuration, startingStatus):
+        """
+        online/offline duration ranges from 1-8 hours.
+        alternating between online and offline. cut if exceeds 48 hours
+        """
+        self.onlineDuration = onlineDuration
+        self.offlineDuration = offlineDuration
+        self.startingStatus = startingStatus
 
     def getDCCProbability(self, post: Post) -> float:
         "Get the Defensive Cognitive Cascade Probability given a Post."
