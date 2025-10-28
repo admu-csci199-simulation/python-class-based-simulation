@@ -1,16 +1,61 @@
+from math import lcm
+
 # NETWORK STRUCTURE CONSTANTS
 GRAPH_SEED = 67
-N_AGENTS = 100
+
+# divisible by:
+#   3 -     # of blocks/clusters
+#   100 -   # 90-9-1 rule and agentType ratios
+N_AGENTS = lcm(3, 100)
 
 BA_NEW_EDGES = 2
 HK_NEW_EDGES = 2
 HK_PROB_CLUSTERING = 0.3
-SBM_SIZES = [
-    N_AGENTS//4, N_AGENTS//4, N_AGENTS//4, N_AGENTS//4 
-]
+SBM_SIZES = [ N_AGENTS//3, N_AGENTS//3, N_AGENTS//3 ]
 SBM_PROB_MATRIX = [
-    [0.4, 0.005, 0.002, 0.009],
-    [0.05, 0.2, 0.02, 0.009],
-    [0.02, 0.05, 0.3, 0.009],
-    [0.009, 0.005, 0.002, 0.1],
+    [0.5, 0.05, 0.05],
+    [0.05, 0.4, 0.05],
+    [0.05, 0.05, 0.6],
 ]
+
+# AGENT GENERATION PARAMETERS
+# assumed 3 clusters
+BELIEF_VALUES = [(-4, -2), (-1, 1), (2, 4)]
+
+
+AGENT_TYPE = {
+    "gullible" : {
+        "steepnessRange" : (1, 1),
+        "toleranceRange" : (8, 9),
+        "count" : int(N_AGENTS*0.15)
+    },
+    "normal" : {
+        "steepnessRange" : (2, 2),
+        "toleranceRange" : (4, 7),
+        "count" : int(N_AGENTS*0.65)
+    },
+    "stubborn" : {
+        "steepnessRange" : (3, 4),
+        "toleranceRange" : (1, 3),
+        "count" : int(N_AGENTS*0.20)
+    }
+}
+
+AGENT_SHARE_PROPENSITY = {
+    "lurker" : {
+        "propensityRange" : (0, 24),
+        "count" : int(N_AGENTS*0.90)
+    },
+    "normal" : {
+        "propensityRange" : (25, 54),
+        "count" : int(N_AGENTS*0.9)
+    },
+    "active" : {
+        "propensityRange" : (55, 100),
+        "count" : int(N_AGENTS*0.1)
+    }
+}
+
+AGENT_DURATION = {
+    "range" : (1, 8) # hours, alternating between online and offline. cut if exceeds 48 hours
+}
