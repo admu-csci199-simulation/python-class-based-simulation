@@ -1,3 +1,5 @@
+# DO NOT USE
+
 import networkx as nx
 from Agent import Agent
 import Constants
@@ -21,3 +23,8 @@ class SimGraph:
         # Assume nodes in nx_digraph are 0..N-1 which matches agents' indices
         for u, v in nx_digraph.edges():
             self.adjList[u].append(v)
+    
+    def getFollowers(self, agentID):
+        """Iterator that yields agentIDs of followers"""
+        for follower in self.adjList[agentID]:
+            yield follower
