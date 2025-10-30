@@ -70,6 +70,7 @@ class Agent:
         
         self.followers = [] # idx of followers
         self.feedQueue = []
+        self.interactionsDone = []
 
     def setBeliefValue(self, beliefValue):
         """value: -4 to 4 (int). if SBM, this is based on cluster"""
@@ -103,10 +104,6 @@ class Agent:
         self.onlineDuration = onlineDuration
         self.offlineDuration = offlineDuration
         self.startingStatus = startingStatus
-        
-        self.followers = []
-        self.feedQueue = []
-        self.interactionsDone = []
 
     def getDCCProbability(self, post: Post) -> float:
         "Get the Defensive Cognitive Cascade Probability given a Post."
