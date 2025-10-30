@@ -1,7 +1,7 @@
 from math import e as EULER
 from Post import Post
 from Helper import BernoulliTrial
-import PostInteraction
+from PostInteraction import PostInteraction
 import Constants
 import random
 
@@ -68,7 +68,7 @@ class Agent:
         self.offlineDuration = 0
         self.startingStatus = ""
         
-        self.followers = []
+        self.followers = [] # idx of followers
         self.feedQueue = []
 
     def setBeliefValue(self, beliefValue):
@@ -161,9 +161,9 @@ class Agent:
             return t % (self.onlineDuration + self.offlineDuration) <= self.offlineDuration
         assert(False)
 
-    def addFollower(self, other: "Agent"):
+    def addFollower(self, otherIdx: int):
         "Appends agent to followers."
-        self.followers.append(other)
+        self.followers.append(otherIdx)
 
     # will it be just like this, or slowly transition
     def adjustBeliefValue(self, newBeliefValue: int):
