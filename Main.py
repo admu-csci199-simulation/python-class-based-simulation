@@ -1,13 +1,14 @@
-from Graph import SimGraph
+import networkx as nx
 import GenerateGraph
 import Constants
-
+import Agent
 
 def mapGraphToAgents():
-    agents = []
-    simulationGraph = SimGraph(agents, GenerateGraph.generateSBMGraph())
-    mappedAgents = []
-    return mappedAgents
+    agents = Agent.generateAgents()
+    DiGraph = GenerateGraph.generateSBMGraph()
+    for u, v in DiGraph.edges():
+        agents[u].addFollower(v)
+    return agents
 
 def simulationProper(agents):
     for currentTime in range(Constants.MAXIMUM_TIME):
