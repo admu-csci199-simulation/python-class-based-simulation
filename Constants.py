@@ -60,3 +60,7 @@ AGENT_DURATION = {
     "online" : (1, 8),
     "offline" : (2, 16)
 }
+
+# SIMULATION PARAMETERS
+MAXIMUM_TIME = 48*60 # 48 hours in mins
+
