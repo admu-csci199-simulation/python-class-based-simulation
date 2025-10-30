@@ -3,11 +3,57 @@ from Post import Post
 from Helper import BernoulliTrial
 import PostInteraction
 import Constants
+import random
 
 
-def generateAgents():
-    agents = [Agent() for i in range(Constants.N_AGENTS)] 
+def generateAgents(seed=Constants.GRAPH_SEED):
+    random.seed(seed)
+    agents = [Agent() for i in range(Constants.N_AGENTS)]
+
+    # Set belief values
+    # assumption: cluster sizes are equal
+    for agentIdx in range(Constants.N_AGENTS):
+        clusterIdx = Constants.N_AGENTS//agentIdx
+        minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[clusterIdx]
+        assignedBeliefValue = random.randint(minBeliefValue, maxBeliefValue)
+        agents[agentIdx].setBeliefValue(assignedBeliefValue)
     
+    # Set steepness tolerance
+    idxRandom = [i for i in range(Constants.N_AGENTS)] # randomized agents index 
+    random.shuffle(idxRandom)
+    idx = 0
+    for agentType, values in Constants.AGENT_TYPE.items():
+        for _ in range(values["count"]):
+            minSteepness, maxSteepness = values["steepnessRange"]
+            minTolerance, maxTolerance = values["toleranceRange"]
+            assignedSteepness = random.randint(minSteepness, maxSteepness)
+            assignedTolerance = random.randint(minTolerance, maxTolerance)
+            agents[idxRandom[idx]].setSteepnessTolerance(assignedSteepness, assignedTolerance)
+            idx += 1
+
+    # Set share propensity
+    random.shuffle(idxRandom)
+    idx = 0
+    for userType, values in Constants.AGENT_SHARE_PROPENSITY.items():
+        for _ in range(values["count"]):
+            minPropensity, maxPropensity = values["propensityRange"]
+            assignedPropensity = random.randint(minPropensity, maxPropensity)
+            agents[idxRandom[idx]].setSharePropensity(assignedPropensity)
+            idx += 1
+
+    # Set active duration
+    random.shuffle(idxRandom)
+    idx = 0
+    for _ in range(Constants.N_AGENTS):
+        minOnlineDuration, maxOnlineDuration = Constants.AGENT_DURATION["online"]
+        minOfflineDuration, maxOfflineDuration = Constants.AGENT_DURATION["offline"]
+        assignedOnlineDuration = random.randint(minOnlineDuration, maxOnlineDuration)
+        assignedOfflineDuration = random.randint(minOfflineDuration, maxOfflineDuration)
+        assignedStartingStatus = "Online" # ASSUMED
+        agents[idxRandom[idx]].setActiveDuration(assignedOnlineDuration, assignedOfflineDuration, assignedStartingStatus)
+        idx += 1
+    
+    return agents
 
 class Agent:
     def __init__(self):
