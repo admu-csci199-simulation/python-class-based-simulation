@@ -72,11 +72,11 @@ class Agent:
         self.feedQueue = []
         self.interactionsDone = []
 
-    def setBeliefValue(self, beliefValue):
+    def setBeliefValue(self, beliefValue) -> None:
         """value: -4 to 4 (int). if SBM, this is based on cluster"""
         self.beliefValue = beliefValue
 
-    def setSteepnessTolerance(self, steepness, tolerance):
+    def setSteepnessTolerance(self, steepness, tolerance) -> None:
         """
         gullible: (1, 8-9)    15% of popu
         normal: (2, 4-7)      65% of popu
@@ -88,7 +88,7 @@ class Agent:
         self.steepness = steepness
         self.tolerance = tolerance
 
-    def setSharePropensity(self, sharePropensity):
+    def setSharePropensity(self, sharePropensity) -> None:
         """
         likeliness to share. 
         value: 0-100 (int) 
@@ -96,7 +96,7 @@ class Agent:
         """
         self.sharePropensity = sharePropensity
 
-    def setActiveDuration(self, onlineDuration, offlineDuration, startingStatus):
+    def setActiveDuration(self, onlineDuration, offlineDuration, startingStatus) -> None:
         """
         online/offline duration ranges from 1-8 hours.
         alternating between online and offline. cut if exceeds 48 hours
@@ -116,16 +116,16 @@ class Agent:
         dccProbability = 1/(1 + EULER**(agentSteepness*(beliefDistance-agentTolerance) - postInterestValue))
         return dccProbability
     
-    def addPostToFeed(self, post):
+    def addPostToFeed(self, post) -> None:
         "Appends post to agent's feed."
         self.feedQueue.append(post)
     
-    def sharePost(self, post):
+    def sharePost(self, post) -> None:
         "Share post to all neighbors of the agent."
         for agent in self.followers:
             agent.addPostToFeed(post)
     
-    def processFeed(self, time: int):
+    def processFeed(self, time: int) -> None:
         "Process all queued posts in feedQueue."
         for post in self.feedQueue:
             dccProbability = self.getDCCProbability(post)
@@ -134,7 +134,7 @@ class Agent:
 
         self.feedQueue.clear()
 
-    def acceptPost(self, time: int, post: "Post"):
+    def acceptPost(self, time: int, post: "Post") -> None:
         "Does all needed processes once an agent accepts the contents of a post"
         self.sharePost(post)
         # To do: all post interactions done by an agent will be stored in
@@ -150,7 +150,7 @@ class Agent:
         )
         self.adjustBeliefValue(post.getBeliefValue())
 
-    def getCurrentStatus(self, t: int):
+    def getCurrentStatus(self, t: int) -> bool:
         "Returns current status of the agent."
         if self.startingStatus == "Online":
             return t % (self.onlineDuration + self.offlineDuration) <= self.onlineDuration
@@ -158,11 +158,11 @@ class Agent:
             return t % (self.onlineDuration + self.offlineDuration) <= self.offlineDuration
         assert(False)
 
-    def addFollower(self, otherIdx: int):
+    def addFollower(self, otherIdx: int) -> None:
         "Appends agent to followers."
         self.followers.append(otherIdx)
 
     # will it be just like this, or slowly transition
-    def adjustBeliefValue(self, newBeliefValue: int):
+    def adjustBeliefValue(self, newBeliefValue: int) -> None:
         "Adjusts the agent belief value"
         self.beliefValue = newBeliefValue 
