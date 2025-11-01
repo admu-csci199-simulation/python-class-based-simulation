@@ -61,6 +61,8 @@ AGENT_DURATION = {
     "offline" : (2, 16)
 }
 
+# POSTS PARAMETERS
+N_INITIAL_POSTS = 1
+
 # SIMULATION PARAMETERS
 MAXIMUM_TIME = 48*60 # 48 hours in mins
-
