@@ -9,7 +9,7 @@ def mapGraphToAgents():
     agents = Agent.generateAgents()
     DiGraph = GenerateGraph.generateSBMGraph()
     for u, v in DiGraph.edges():
-        agents[u].addFollower(v)
+        agents[u].addFollower(agents[v])
     return agents
 
 def setupPosts(agentsList):
@@ -19,12 +19,13 @@ def setupPosts(agentsList):
             originalPoster = chosenPosterID,
             beliefValue = agentsList[chosenPosterID].beliefValue
         )
-        agentsList[chosenPosterID].addPostToFeed(currentPost)
+        agentsList[chosenPosterID].addPostToFeed(currentPost, -1)
 
 def simulationProper(simulationAgentsList):
     for currentTime in range(Constants.MAXIMUM_TIME):
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
+            currentAgent.addNewPostsToFeed(currentTime)
 
             if (currentAgent.isOnline(currentTime)):
                 currentAgent.processFeed(currentTime)

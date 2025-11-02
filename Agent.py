@@ -68,8 +68,9 @@ class Agent:
         self.offlineDuration = 0
         self.startingStatus = ""
         
-        self.followers = [] # idx of followers
+        self.followers = [] # followers instances
         self.feedQueue = []
+        self.feedBuffer = []
         self.interactionsDone = []
 
     def setBeliefValue(self, beliefValue) -> None:
@@ -116,17 +117,28 @@ class Agent:
         dccProbability = 1/(1 + EULER**(agentSteepness*(beliefDistance-agentTolerance) - postInterestValue))
         return dccProbability
     
-    def addPostToFeed(self, post) -> None:
-        "Appends post to agent's feed."
-        self.feedQueue.append(post)
+    def addPostToFeed(self, post, time: int) -> None:
+        "Appends post to agent's feed buffer."
+        self.feedBuffer.append([post, time])
     
-    def sharePost(self, post) -> None:
+    def addNewPostsToFeed(self, time: int) -> None:
+        "Adds posts from buffer to feed."
+        if len(self.feedBuffer) == 0:
+            return 
+        
+        postsBuffer, timePostsShared = zip(*self.feedBuffer)
+        if (time > timePostsShared[0]):
+            self.feedQueue.extend(postsBuffer)
+        self.feedBuffer = []
+
+    def sharePost(self, post, time: int) -> None:
         "Share post to all neighbors of the agent."
         for agent in self.followers:
-            agent.addPostToFeed(post)
+            agent.addPostToFeed(post, time)
     
     def processFeed(self, time: int) -> None:
         "Process all queued posts in feedQueue."
+        print(time, len(self.feedQueue))
         for post in self.feedQueue:
             dccProbability = self.getDCCProbability(post)
             if BernoulliTrial(dccProbability):
@@ -136,7 +148,7 @@ class Agent:
 
     def acceptPost(self, time: int, post: "Post") -> None:
         "Does all needed processes once an agent accepts the contents of a post"
-        self.sharePost(post)
+        self.sharePost(post, time)
         # To do: all post interactions done by an agent will be stored in
         # a struct inherent to that agent, we can then just collect this later
         # on in order to do statistics
