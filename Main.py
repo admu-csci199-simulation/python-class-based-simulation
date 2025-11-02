@@ -4,6 +4,7 @@ import GeneratePosts
 import Constants
 import Agent
 import random
+import Statistics
 
 def mapGraphToAgents():
     agents = Agent.generateAgents()
@@ -19,18 +20,22 @@ def setupPosts(agentsList):
             originalPoster = chosenPosterID,
             beliefValue = agentsList[chosenPosterID].beliefValue
         )
-        agentsList[chosenPosterID].addPostToFeed(currentPost, -1)
+        agentsList[chosenPosterID].addPostToFeedBuffer(currentPost, -1)
 
 def simulationProper(simulationAgentsList):
     for currentTime in range(Constants.MAXIMUM_TIME):
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
-            currentAgent.addNewPostsToFeed(currentTime)
 
             if (currentAgent.isOnline(currentTime)):
                 currentAgent.processFeed(currentTime)
+            
+            currentAgent.addNewPostsToFeedQueue(currentTime)
 
 if __name__ == "__main__":
     agentsList = mapGraphToAgents()
     setupPosts(agentsList)
     simulationProper(agentsList)
+
+    stats = Statistics.Statistics(agentsList)
+    stats.generateGraphsPerPost(saveDir="graphs")
