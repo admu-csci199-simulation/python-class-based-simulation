@@ -26,7 +26,7 @@ def simulationProper(simulationAgentsList):
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
 
-            if (currentAgent.getCurrentStatus(currentTime) == "Online"):
+            if (currentAgent.isOnline(currentTime)):
                 currentAgent.processFeed(currentTime)
 
 if __name__ == "__main__":

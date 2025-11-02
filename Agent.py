@@ -150,7 +150,7 @@ class Agent:
         )
         self.adjustBeliefValue(post.getBeliefValue())
 
-    def getCurrentStatus(self, t: int) -> bool:
+    def isOnline(self, t: int) -> bool:
         "Returns current status of the agent."
         if self.startingStatus == "Online":
             return t % (self.onlineDuration + self.offlineDuration) <= self.onlineDuration

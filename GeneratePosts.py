@@ -12,4 +12,4 @@ def generatePost(beliefValue=None, originalPoster=None, postingTime=None):
         postingTime = 0
     interestValue = random.randint(-3, 3)
     
-    Post(beliefValue, interestValue, postingTime, originalPoster)
+    return Post(beliefValue, interestValue, postingTime, originalPoster)
