@@ -70,7 +70,7 @@ class Agent:
         
         self.followers = [] # followers instances
         self.feedQueue = []
-        self.feedBuffer = []
+        self.feedBuffer = set()
         self.interactionsDone = []
 
     def setBeliefValue(self, beliefValue) -> None:
@@ -119,8 +119,8 @@ class Agent:
     
     def addPostToFeed(self, post, time: int) -> None:
         "Appends post to agent's feed buffer."
-        self.feedBuffer.append([post, time])
-    
+        self.feedBuffer.add((post, time))
+            
     def addNewPostsToFeed(self, time: int) -> None:
         "Adds posts from buffer to feed."
         if len(self.feedBuffer) == 0:
@@ -129,7 +129,7 @@ class Agent:
         postsBuffer, timePostsShared = zip(*self.feedBuffer)
         if (time > timePostsShared[0]):
             self.feedQueue.extend(postsBuffer)
-        self.feedBuffer = []
+        self.feedBuffer.clear()
 
     def sharePost(self, post, time: int) -> None:
         "Share post to all neighbors of the agent."
@@ -138,7 +138,6 @@ class Agent:
     
     def processFeed(self, time: int) -> None:
         "Process all queued posts in feedQueue."
-        print(time, len(self.feedQueue))
         for post in self.feedQueue:
             dccProbability = self.getDCCProbability(post)
             if BernoulliTrial(dccProbability):
