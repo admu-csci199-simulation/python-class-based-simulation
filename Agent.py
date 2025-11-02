@@ -13,7 +13,7 @@ def generateAgents(seed=Constants.GRAPH_SEED):
     # Set belief values
     # assumption: cluster sizes are equal
     for agentIdx in range(Constants.N_AGENTS):
-        clusterIdx = Constants.N_AGENTS//agentIdx
+        clusterIdx = agentIdx//Constants.N_AGENTS
         minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[clusterIdx]
         assignedBeliefValue = random.randint(minBeliefValue, maxBeliefValue)
         agents[agentIdx].setBeliefValue(assignedBeliefValue)
