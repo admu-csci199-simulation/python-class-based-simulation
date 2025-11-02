@@ -52,7 +52,7 @@ AGENT_SHARE_PROPENSITY = {
     },
     "active" : {
         "propensityRange" : (55, 100),
-        "count" : int(N_AGENTS*0.1)
+        "count" : int(N_AGENTS*0.01)
     }
 }
 
