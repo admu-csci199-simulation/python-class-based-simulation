@@ -1,9 +1,8 @@
-import networkx as nx
+import random
+import Agent
+import Constants
 import GenerateGraph
 import GeneratePosts
-import Constants
-import Agent
-import random
 import Statistics
 
 def mapGraphToAgents():
@@ -20,20 +19,22 @@ def setupPosts(agentsList):
             originalPoster = chosenPosterID,
             beliefValue = agentsList[chosenPosterID].beliefValue
         )
-        agentsList[chosenPosterID].addPostToFeedBuffer(currentPost, -1)
+        agentsList[chosenPosterID].addPostToFeedBuffer(currentPost)
 
 def simulationProper(simulationAgentsList):
+    for agentID in range(Constants.N_AGENTS):
+        simulationAgentsList[agentID].addNewPostsToFeedQueue()
+
     for currentTime in range(Constants.MAXIMUM_TIME):
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
-
-            if currentTime == 0:
-                currentAgent.addNewPostsToFeedQueue(currentTime)
             
             if (currentAgent.isOnline(currentTime)):
                 currentAgent.processFeed(currentTime)
-            
-            currentAgent.addNewPostsToFeedQueue(currentTime)
+        
+        for agentID in range(Constants.N_AGENTS):
+            currentAgent = simulationAgentsList[agentID]
+            currentAgent.addNewPostsToFeedQueue()
 
 if __name__ == "__main__":
     agentsList = mapGraphToAgents()

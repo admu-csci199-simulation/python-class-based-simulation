@@ -117,29 +117,24 @@ class Agent:
         dccProbability = 1/(1 + EULER**(agentSteepness*(beliefDistance-agentTolerance) - postInterestValue))
         return dccProbability
     
-    def addPostToFeedBuffer(self, post, time: int) -> None:
+    def addPostToFeedBuffer(self, post) -> None:
         "Appends post to agent's feed buffer."
-        self.feedBuffer.add((post, time))
+        self.feedBuffer.add(post)
             
-    def addNewPostsToFeedQueue(self, time: int) -> None:
+    def addNewPostsToFeedQueue(self) -> None:
         "Adds posts from feed buffer to feed queue."
         if len(self.feedBuffer) == 0:
             return 
-        
-        # postsBuffer, timePostsShared = zip(*self.feedBuffer)
-        # if (time > timePostsShared[0]):
-        #     self.feedQueue.extend(postsBuffer)
 
-        for post, post_time in self.feedBuffer:
-            if post_time < time:
-                self.feedQueue.append(post)
+        for post in self.feedBuffer:
+            self.feedQueue.append(post)
                 
         self.feedBuffer.clear() 
 
-    def sharePost(self, post, time: int) -> None:
+    def sharePost(self, post) -> None:
         "Share post to all neighbors of the agent."
         for agent in self.followers:
-            agent.addPostToFeedBuffer(post, time)
+            agent.addPostToFeedBuffer(post)
     
     def processFeed(self, time: int) -> None:
         "Process all queued posts in feedQueue."
@@ -152,7 +147,7 @@ class Agent:
 
     def acceptPost(self, time: int, post: "Post") -> None:
         "Does all needed processes once an agent accepts the contents of a post"
-        self.sharePost(post, time)
+        self.sharePost(post)
         # To do: all post interactions done by an agent will be stored in
         # a struct inherent to that agent, we can then just collect this later
         # on in order to do statistics
