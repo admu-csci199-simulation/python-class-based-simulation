@@ -41,4 +41,5 @@ if __name__ == "__main__":
     simulationProper(agentsList)
 
     stats = Statistics.Statistics(agentsList)
-    stats.generateGraphsPerPost(saveDir="graphs")
+    stats.generatePerTickGraphs()
+    stats.generateBinnedGraphs()
