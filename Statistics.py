@@ -85,8 +85,9 @@ class Statistics:
                 postCounts.append(count)
 
             ax.bar(times, postCounts)
-            ax.set_xticks(times)
-            ax.set_xticklabels(times)
+            step = max(1, len(times) // 15)
+            ax.set_xticks(times[::step])
+            ax.set_xticklabels(times[::step], rotation=45)
 
             ax.set_xlabel("Time")
             ax.set_ylabel("Count of Interactions")
