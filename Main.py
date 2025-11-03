@@ -27,6 +27,9 @@ def simulationProper(simulationAgentsList):
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
 
+            if currentTime == 0:
+                currentAgent.addNewPostsToFeedQueue(currentTime)
+            
             if (currentAgent.isOnline(currentTime)):
                 currentAgent.processFeed(currentTime)
             
