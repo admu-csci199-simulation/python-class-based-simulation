@@ -14,7 +14,8 @@ def generatePost(beliefValue=None, originalPoster=None, postingTime=None):
     return Post(beliefValue, interestValue, postingTime, originalPoster)
 
 class Post:
-    def __init__(self, beliefValue, interestValue, postingTime, originalPoster):
+    def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster):
+        self.postID = postID
         self.beliefValue = beliefValue
         self.interestValue = interestValue
         self.postingTime = postingTime

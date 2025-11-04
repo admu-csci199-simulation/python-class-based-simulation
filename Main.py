@@ -4,6 +4,7 @@ import Constants
 import GenerateGraph
 import Post
 import Statistics
+from collections import deque
 
 def mapGraphToAgents():
     agents = Agent.generateAgents()
@@ -13,21 +14,29 @@ def mapGraphToAgents():
     return agents
 
 def setupPosts(agentsList):
+    postsList = []
     for i in range(Constants.N_INITIAL_POSTS):
-        chosenPosterID = random.randint(0, Constants.N_AGENTS-1)
-        print(chosenPosterID)
-        currentPost = Post.generatePost(
-            originalPoster = chosenPosterID,
-            beliefValue = agentsList[chosenPosterID].beliefValue
+        chosenPosterID = random.randint(0, Constants.N_AGENTS-1) # Is it possible to skew this so that chosenPoster is more likely to be an active agent
+        # print(chosenPosterID)
+        postsList.append(
+            Post.generatePost(
+                postID = i,
+                originalPoster = chosenPosterID,
+                beliefValue = agentsList[chosenPosterID].beliefValue
+            )
         )
-        print(agentsList[chosenPosterID].beliefValue)
-        agentsList[chosenPosterID].addPostToFeedBuffer(currentPost)
+    
+    postsList.sort(key=lambda post: post.postingTime)
+    postsQueue = deque(postsList)
+    return postsQueue
 
-def simulationProper(simulationAgentsList):
-    for agentID in range(Constants.N_AGENTS):
-        simulationAgentsList[agentID].addNewPostsToFeedQueue()
-
+def simulationProper(postsQueue, simulationAgentsList):
     for currentTime in range(Constants.MAXIMUM_TIME):
+        while (postsQueue[0].postingTime == currentTime):
+            currentPost = postsQueue[0]
+            simulationAgentsList[currentPost.originalPoster].sharePost(currentPost)
+            postsQueue.popleft()
+
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
             
@@ -40,11 +49,12 @@ def simulationProper(simulationAgentsList):
 
 if __name__ == "__main__":
     agentsList = mapGraphToAgents()
+    postsQueue = setupPosts(agentsList)
+    
     stats = Statistics.Statistics(agentsList)
     stats.generateBeliefTypePieChart(saveDir="old")
     
-    setupPosts(agentsList)
-    simulationProper(agentsList)
+    simulationProper(postsQueue, agentsList)
 
     stats.generatePerTickGraphs()
     stats.generateBinnedGraphs()
