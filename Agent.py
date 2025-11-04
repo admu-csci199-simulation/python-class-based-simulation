@@ -72,6 +72,7 @@ class Agent:
         self.feedQueue = []
         self.feedBuffer = set()
         self.interactionsDone = []
+        self.sharedPosts = set()
 
     def setBeliefValue(self, beliefValue) -> None:
         """value: -4 to 4 (int). if SBM, this is based on cluster"""
@@ -135,7 +136,8 @@ class Agent:
     def sharePost(self, post) -> None:
         "Share post to all neighbors of the agent."
         for agent in self.followers:
-            agent.addPostToFeedBuffer(post)
+            if not agent.hasPostBeenShared(post):
+                agent.addPostToFeedBuffer(post)
     
     def processFeed(self, time: int) -> None:
         "Process all queued posts in feedQueue."
@@ -161,6 +163,11 @@ class Agent:
             )
         )
         self.adjustBeliefValue(post.getBeliefValue())
+        self.sharedPosts.add(post.postID)
+
+    def hasPostBeenShared(self, post: "Post") -> bool:
+        "Checks if a post has already been shared by an agent"
+        return post.postID in self.sharedPosts
 
     def isOnline(self, t: int) -> bool:
         "Returns current status of the agent."

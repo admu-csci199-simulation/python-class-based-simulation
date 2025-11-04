@@ -21,6 +21,7 @@ def setupPosts(agentsList):
         postsList.append(
             Post.generatePost(
                 postID = i,
+                postingTime=0, # just for this one case
                 originalPoster = chosenPosterID,
                 beliefValue = agentsList[chosenPosterID].beliefValue
             )
@@ -35,6 +36,7 @@ def simulationProper(postsQueue, simulationAgentsList):
         while (postsQueue[0].postingTime == currentTime):
             currentPost = postsQueue[0]
             simulationAgentsList[currentPost.originalPoster].sharePost(currentPost)
+            simulationAgentsList[currentPost.originalPoster].sharedPosts.add(currentPost.postID)
             postsQueue.popleft()
 
         for agentID in range(Constants.N_AGENTS):
