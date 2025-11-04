@@ -106,15 +106,16 @@ class Agent:
         self.offlineDuration = offlineDuration
         self.startingStatus = startingStatus
 
-    def getDCCProbability(self, post: Post) -> float:
+    def getDCCProbability(self, post: Post, time: int) -> float:
         "Get the Defensive Cognitive Cascade Probability given a Post."
         postBeliefValue = post.getBeliefValue()
         postInterestValue = post.getInterestValue()
         agentSteepness = self.steepness
         agentTolerance = self.tolerance
         beliefDistance = abs(postBeliefValue - self.beliefValue)
-        
-        dccProbability = 1/(1 + EULER**(agentSteepness*(beliefDistance-agentTolerance) - postInterestValue))
+        interestDecayConstant = 4
+
+        dccProbability = 1/(1 + EULER**(agentSteepness*(beliefDistance-agentTolerance) - postInterestValue)) * self.sharePropensity * (1 - (time/2880)**interestDecayConstant)
         return dccProbability
     
     def addPostToFeedBuffer(self, post) -> None:
@@ -139,7 +140,7 @@ class Agent:
     def processFeed(self, time: int) -> None:
         "Process all queued posts in feedQueue."
         for post in self.feedQueue:
-            dccProbability = self.getDCCProbability(post)
+            dccProbability = self.getDCCProbability(post, time)
             if BernoulliTrial(dccProbability):
                 self.acceptPost(time, post)
 
@@ -197,8 +198,9 @@ class Agent:
             steepnessMin, steepnessMax = ranges["steepnessRange"]
             toleranceMin, toleranceMax = ranges["toleranceRange"]
 
-            if (steepnessMin <= self.steepness <= steepnessMax) and \
-               (toleranceMin <= self.tolerance <= toleranceMax):
+            if ((steepnessMin <= self.steepness <= steepnessMax) and
+               (toleranceMin <= self.tolerance <= toleranceMax)
+            ):
                 return typeName
             
     def classifyAgentBelief(self) -> str:
