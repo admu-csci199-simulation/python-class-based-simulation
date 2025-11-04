@@ -1,4 +1,4 @@
-from math import e as EULER
+from math import e as EULER 
 from Post import Post
 from Helper import BernoulliTrial
 from PostInteraction import PostInteraction
@@ -13,7 +13,7 @@ def generateAgents(seed=Constants.GRAPH_SEED):
     # Set belief values
     # assumption: cluster sizes are equal
     for agentIdx in range(Constants.N_AGENTS):
-        clusterIdx = agentIdx//Constants.N_AGENTS
+        clusterIdx = agentIdx//len(Constants.BELIEF_VALUES)
         minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[clusterIdx]
         assignedBeliefValue = random.randint(minBeliefValue, maxBeliefValue)
         agents[agentIdx].setBeliefValue(assignedBeliefValue)
@@ -173,7 +173,16 @@ class Agent:
         "Appends agent to followers."
         self.followers.append(otherIdx)
 
-    # will it be just like this, or slowly transition
-    def adjustBeliefValue(self, newBeliefValue: int) -> None:
+    def adjustBeliefValue(self, postBeliefValue: int) -> None:
         "Adjusts the agent belief value"
-        self.beliefValue = newBeliefValue 
+        beliefDiff = abs(postBeliefValue - self.beliefValue)
+        newBeliefValue = 0
+        if beliefDiff <= 2:
+            newBeliefValue = postBeliefValue
+        elif beliefDiff <= 5:
+            newBeliefValue = self.beliefValue + 2*(-1 if postBeliefValue < self.beliefValue else 1)
+        elif beliefDiff <= 8:
+            newBeliefValue = self.beliefValue + 1*(-1 if postBeliefValue < self.beliefValue else 1)
+        else:
+            assert(False) # unexpected belief difference 
+        self.beliefValue = newBeliefValue
