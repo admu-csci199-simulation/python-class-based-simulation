@@ -1,7 +1,7 @@
 from math import lcm
 
 # NETWORK STRUCTURE CONSTANTS
-GRAPH_SEED = 67
+GRAPH_SEED = 100
 
 # divisible by:
 #   3 -     # of blocks/clusters
@@ -59,6 +59,12 @@ AGENT_SHARE_PROPENSITY = {
 AGENT_DURATION = {
     "online" : (1, 8),
     "offline" : (2, 16)
+}
+
+AGENT_BELIEF_TYPE = {
+    "red": [-4, -3, -2],
+    "centrist": [-1, 0, 1],
+    "blue": [2, 3, 4]
 }
 
 # POSTS PARAMETERS

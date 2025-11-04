@@ -13,7 +13,7 @@ def generateAgents(seed=Constants.GRAPH_SEED):
     # Set belief values
     # assumption: cluster sizes are equal
     for agentIdx in range(Constants.N_AGENTS):
-        clusterIdx = agentIdx//len(Constants.BELIEF_VALUES)
+        clusterIdx = agentIdx//(Constants.N_AGENTS//3)
         minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[clusterIdx]
         assignedBeliefValue = random.randint(minBeliefValue, maxBeliefValue)
         agents[agentIdx].setBeliefValue(assignedBeliefValue)
@@ -186,3 +186,26 @@ class Agent:
         else:
             assert(False) # unexpected belief difference 
         self.beliefValue = newBeliefValue
+        self.beliefValue = newBeliefValue 
+
+    def classifyAgentType(self) -> str:
+        """
+        Returns 'gullible', 'stubborn', 'normal' based on 
+        steepness and tolerance.
+        """
+        for typeName, ranges in Constants.AGENT_TYPE.items():
+            steepnessMin, steepnessMax = ranges["steepnessRange"]
+            toleranceMin, toleranceMax = ranges["toleranceRange"]
+
+            if (steepnessMin <= self.steepness <= steepnessMax) and \
+               (toleranceMin <= self.tolerance <= toleranceMax):
+                return typeName
+            
+    def classifyAgentBelief(self) -> str:
+        """
+        Returns 'red', 'centrist', or 'blue'
+        """
+        for beliefName, values in Constants.AGENT_BELIEF_TYPE.items():
+            if self.beliefValue in values:
+                return beliefName
+        

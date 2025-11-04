@@ -15,10 +15,12 @@ def mapGraphToAgents():
 def setupPosts(agentsList):
     for i in range(Constants.N_INITIAL_POSTS):
         chosenPosterID = random.randint(0, Constants.N_AGENTS-1)
+        print(chosenPosterID)
         currentPost = GeneratePosts.generatePost(
             originalPoster = chosenPosterID,
             beliefValue = agentsList[chosenPosterID].beliefValue
         )
+        print(agentsList[chosenPosterID].beliefValue)
         agentsList[chosenPosterID].addPostToFeedBuffer(currentPost)
 
 def simulationProper(simulationAgentsList):
@@ -38,9 +40,13 @@ def simulationProper(simulationAgentsList):
 
 if __name__ == "__main__":
     agentsList = mapGraphToAgents()
+    stats = Statistics.Statistics(agentsList)
+    stats.generateBeliefTypePieChart(saveDir="old")
+    
     setupPosts(agentsList)
     simulationProper(agentsList)
 
-    stats = Statistics.Statistics(agentsList)
     stats.generatePerTickGraphs()
     stats.generateBinnedGraphs()
+    stats.generateAgentDemogGraph()
+    stats.generateBeliefTypePieChart(saveDir="new")

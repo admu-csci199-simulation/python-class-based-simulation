@@ -164,3 +164,80 @@ class Statistics:
             fig.savefig(f"{saveDir}/binned_post_{post}.png")
 
             plt.close(fig)
+
+    def generateAgentDemogGraph(self, figsize=Constants.FIG_SIZE, saveDir=Constants.GRAPHS_DIR):
+        """
+        Creates a pie chart of agent types.
+        """
+        counts = {"gullible": 0, "normal": 0, "stubborn": 0, "unknown": 0}
+        for agent in self.agents:
+            type = agent.classifyAgentType()
+            if type not in counts:
+                counts["unknown"] += 1
+            else:
+                counts[type] += 1
+
+        labels = list(counts.keys())
+        values = list(counts.values())
+        total = sum(values)
+
+        # Custom function to show both % and counts
+        def autopct_format(pct):
+            count = int(round(pct * total / 100.0))
+            return f"{pct:.1f}%\n({count})"
+
+        fig, ax = plt.subplots(figsize=(6, 6))
+        wedges, texts, autotexts = ax.pie(
+            values,
+            labels=labels,
+            autopct=autopct_format,
+            startangle=140,
+            textprops={"fontsize": 10}
+        )
+
+        ax.set_title(f"{saveDir} Agent Type Distribution")
+        ax.axis("equal") 
+
+        fig.savefig(f"graphs/{saveDir}_agent_type_distribution.png", bbox_inches="tight")
+        plt.close(fig)
+
+        return fig
+
+    def generateBeliefTypePieChart(self, saveDir=Constants.GRAPHS_DIR):
+        """
+            Generates a pie chart showing the distribution of agents
+            based on their beliefValue (red, centrist, blue).
+        """
+        counts = {"red": 0, "centrist": 0, "blue": 0, "unknown": 0}
+        for agent in self.agents:
+            type = agent.classifyAgentBelief()
+            if type not in counts:
+                counts["unknown"] += 1
+            else:
+                counts[type] += 1
+
+        labels = list(counts.keys())
+        sizes = list(counts.values())
+        total = sum(sizes)
+
+        def autopct_format(pct):
+            count = int(round(pct * total / 100.0))
+            return f"{pct:.1f}%\n({count})"
+
+        fig, ax = plt.subplots(figsize=(6, 6))
+        wedges, texts, autotexts = ax.pie(
+            sizes,
+            labels=labels,
+            autopct=autopct_format,
+            startangle=140,
+            textprops={"fontsize": 10},
+            colors=["#e74c3c", "#95a5a6", "#3498db"]  # red, gray, blue
+        )
+
+        ax.set_title("Agent Belief Distribution")
+        ax.axis("equal")
+
+        fig.savefig(f"graphs/{saveDir}_agent_belief_distribution.png", bbox_inches="tight")
+        plt.close(fig)
+
+        return fig
