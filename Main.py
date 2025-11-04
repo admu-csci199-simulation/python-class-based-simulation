@@ -2,7 +2,7 @@ import random
 import Agent
 import Constants
 import GenerateGraph
-import GeneratePosts
+import Post
 import Statistics
 
 def mapGraphToAgents():
@@ -16,7 +16,7 @@ def setupPosts(agentsList):
     for i in range(Constants.N_INITIAL_POSTS):
         chosenPosterID = random.randint(0, Constants.N_AGENTS-1)
         print(chosenPosterID)
-        currentPost = GeneratePosts.generatePost(
+        currentPost = Post.generatePost(
             originalPoster = chosenPosterID,
             beliefValue = agentsList[chosenPosterID].beliefValue
         )
