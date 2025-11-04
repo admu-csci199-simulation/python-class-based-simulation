@@ -2,7 +2,7 @@ import random
 import Constants
 
 
-def generatePost(beliefValue=None, originalPoster=None, postingTime=None):
+def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None):
     if beliefValue is None:
         beliefValue = random.randint(-3, 3)
     if originalPoster is None:
@@ -11,7 +11,7 @@ def generatePost(beliefValue=None, originalPoster=None, postingTime=None):
         postingTime = 0
     interestValue = random.randint(-3, 3)
     
-    return Post(beliefValue, interestValue, postingTime, originalPoster)
+    return Post(postID, beliefValue, interestValue, postingTime, originalPoster)
 
 class Post:
     def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster):

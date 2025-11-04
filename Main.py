@@ -33,7 +33,7 @@ def setupPosts(agentsList):
 
 def simulationProper(postsQueue, simulationAgentsList):
     for currentTime in range(Constants.MAXIMUM_TIME):
-        while (postsQueue[0].postingTime == currentTime):
+        while (len(postsQueue) > 0 and postsQueue[0].postingTime == currentTime):
             currentPost = postsQueue[0]
             simulationAgentsList[currentPost.originalPoster].sharePost(currentPost)
             simulationAgentsList[currentPost.originalPoster].sharedPosts.add(currentPost.postID)
