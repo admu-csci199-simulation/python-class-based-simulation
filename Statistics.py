@@ -67,16 +67,16 @@ class Statistics:
 
         times = sorted(counts.keys())
         if not times:
-            raise ValueError("No interactions to plot.")
+            print("No interactions to plot.")
 
         posts = sorted({interaction.post for interaction in interactions})
         if not posts:
-            raise ValueError("No posts found in interactions.")
+            print("No posts found in interactions.")
         
         figs: Dict[str, Tuple[plt.Digure, plt.Axes]] = {}
         os.makedirs(saveDir, exist_ok=True) 
         for post in posts:
-            fig, ax = plt.subplots(figsize=figsize)
+            fig, ax = plt.subplots(figsize=Constants.FIG_SIZE)
 
             postCounts = []
             for t in times:
@@ -141,7 +141,7 @@ class Statistics:
         allPosts = sorted({i.post for i in interactions})
 
         if not allPosts:
-            raise ValueError("No posts found to plot.")
+            print("No posts found to plot.")
         
         os.makedirs(saveDir, exist_ok=True)
         for post in allPosts:
@@ -195,10 +195,10 @@ class Statistics:
             textprops={"fontsize": 10}
         )
 
-        ax.set_title(f"{saveDir} Agent Type Distribution")
+        ax.set_title(f"Agent Type Distribution")
         ax.axis("equal") 
 
-        fig.savefig(f"graphs/{saveDir}_agent_type_distribution.png", bbox_inches="tight")
+        fig.savefig(f"{saveDir}/agent_type_distribution.png", bbox_inches="tight")
         plt.close(fig)
 
         return fig
@@ -234,10 +234,18 @@ class Statistics:
             colors=["#e74c3c", "#95a5a6", "#3498db"]  # red, gray, blue
         )
 
-        ax.set_title("Agent Belief Distribution")
+        ax.set_title(f"Agent Belief Distribution")
         ax.axis("equal")
 
-        fig.savefig(f"graphs/{saveDir}_agent_belief_distribution.png", bbox_inches="tight")
+        fig.savefig(f"{saveDir}/_agent_belief_distribution.png", bbox_inches="tight")
         plt.close(fig)
 
         return fig
+    
+    def generateGraphs(self, saveDir=''):
+        os.makedirs(saveDir, exist_ok=True)
+        self.generateBeliefTypePieChart(saveDir=saveDir)
+        self.generatePerTickGraphs(saveDir=saveDir)
+        self.generateBinnedGraphs(saveDir=saveDir)
+        self.generateAgentDemogGraph(saveDir=saveDir)
+        self.generateBeliefTypePieChart(saveDir=saveDir)

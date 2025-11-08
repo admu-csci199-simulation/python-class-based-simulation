@@ -51,14 +51,9 @@ def simulationProper(postsQueue, simulationAgentsList):
 
 if __name__ == "__main__":
     agentsList = mapGraphToAgents()
+    stats = Statistics.Statistics(agentsList)
     postsQueue = setupPosts(agentsList)
     
-    stats = Statistics.Statistics(agentsList)
-    stats.generateBeliefTypePieChart(saveDir="old")
-    
+    stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
     simulationProper(postsQueue, agentsList)
-
-    stats.generatePerTickGraphs()
-    stats.generateBinnedGraphs()
-    stats.generateAgentDemogGraph()
-    stats.generateBeliefTypePieChart(saveDir="new")
+    stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)

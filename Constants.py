@@ -78,3 +78,5 @@ MAXIMUM_TIME = 48*60 # 48 hours in mins
 BIN_SIZE = 15
 FIG_SIZE = (8, 5)
 GRAPHS_DIR = "graphs"
+PRE_SIM_GRAPHS_DIR = "graphs/pre_sim"
+POST_SIM_GRAPHS_DIR = "graphs/post_sim"
