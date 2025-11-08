@@ -242,6 +242,68 @@ class Statistics:
 
         return fig
     
+    def generateAgentTypesPerCamp(self, figsize=Constants.FIG_SIZE, saveDir=Constants.GRAPHS_DIR):
+        """
+        Generate one pie chart per political camp (red, centrist, blue).
+        Each pie shows distribution of agent types inside that camp:
+          gullible, normal, stubborn, unknown
+
+        Saves files to saveDir
+        """
+
+        # initialize nested counters: camp -> type -> count
+        camps = ["red", "centrist", "blue"]
+        types = ["gullible", "normal", "stubborn", "unknown"]
+        camp_counts = {camp: {t: 0 for t in types} for camp in camps}
+
+        # fill counts
+        for agent in self.agents:
+            try:
+                camp = agent.classifyAgentBelief()
+            except Exception:
+                camp = "unknown"
+            try:
+                a_type = agent.classifyAgentType()
+            except Exception:
+                a_type = "unknown"
+
+            if camp not in camp_counts:
+                # ignore agents whose belief isn't one of the three camps
+                continue
+
+            if a_type not in camp_counts[camp]:
+                a_type = "unknown"
+            camp_counts[camp][a_type] += 1
+
+        saved_paths = {}
+        # create a pie per camp
+        for camp in camps:
+            counts = camp_counts[camp]
+            labels = list(counts.keys())
+            values = list(counts.values())
+            total = sum(values) if sum(values) > 0 else 1
+
+            def autopct_format(pct):
+                count = int(round(pct * total / 100.0))
+                return f"{pct:.1f}%\n({count})"
+
+            fig, ax = plt.subplots(figsize=figsize)
+            wedges, texts, autotexts = ax.pie(
+                values,
+                labels=labels,
+                autopct=autopct_format,
+                startangle=140,
+                textprops={"fontsize": 10}
+            )
+            ax.set_title(f"{camp.capitalize()} camp — agent type composition")
+            ax.axis("equal")
+
+            fname = os.path.join(saveDir, f"{(camp)}_camp_agent_types.png")
+            fig.savefig(fname, bbox_inches="tight")
+            plt.close(fig)
+            saved_paths[camp] = fname
+
+    
     def generateGraphs(self, saveDir=''):
         os.makedirs(saveDir, exist_ok=True)
         self.generateBeliefTypePieChart(saveDir=saveDir)
@@ -249,3 +311,4 @@ class Statistics:
         self.generateBinnedGraphs(saveDir=saveDir)
         self.generateAgentDemogGraph(saveDir=saveDir)
         self.generateBeliefTypePieChart(saveDir=saveDir)
+        self.generateAgentTypesPerCamp(saveDir=saveDir)
