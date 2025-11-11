@@ -175,9 +175,9 @@ class Agent:
     def isOnline(self, t: int) -> bool:
         "Returns current status of the agent."
         if self.startingStatus == "Online":
-            return t % (self.onlineDuration + self.offlineDuration) <= self.onlineDuration
+            return t % (self.onlineDuration + self.offlineDuration) < self.onlineDuration
         elif self.startingStatus == "Offline":
-            return t % (self.onlineDuration + self.offlineDuration) <= self.offlineDuration
+            return not t % (self.onlineDuration + self.offlineDuration) < self.offlineDuration
         assert(False)
 
     def addFollower(self, otherIdx: int) -> None:
