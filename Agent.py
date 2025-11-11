@@ -49,7 +49,7 @@ def generateAgents(seed=Constants.GRAPH_SEED):
         assignedOnlineDuration = random.randint(minOnlineDuration, maxOnlineDuration)
         assignedOfflineDuration = random.randint(minOfflineDuration, maxOfflineDuration)
         assignedStartingStatus = random.choice(["Online", "Offline"])
-        assignedOfflineStartOffset = random.randint(0, (assignedOnlineDuration if assignedStartingStatus=="Online" else assignedOfflineDuration) - 1)
+        assignedOfflineStartOffset = random.randint(0, (assignedOfflineDuration if assignedStartingStatus=="Online" else assignedOnlineDuration) - 1)
         agents[idxRandom[idx]].setActiveDuration(assignedOnlineDuration, assignedOfflineDuration, assignedStartingStatus, assignedOfflineStartOffset)
         idx += 1
     
@@ -177,7 +177,12 @@ class Agent:
 
     def isOnline(self, t: int) -> bool:
         "Returns current status of the agent."
-        if self.startingStatus == "Online":
+        if t < self.offlineStartOffset:
+            if self.startingStatus == "Online":
+                return False
+            else:
+                return True
+        elif self.startingStatus == "Online":
             return (t+self.offlineStartOffset) % (self.onlineDuration + self.offlineDuration) < self.onlineDuration
         elif self.startingStatus == "Offline":
             return not ((t+self.offlineStartOffset) % (self.onlineDuration + self.offlineDuration) < self.offlineDuration)
