@@ -7,7 +7,6 @@ import random
 
 
 def generateAgents(seed=Constants.GRAPH_SEED):
-    random.seed(seed)
     agents = [Agent() for i in range(Constants.N_AGENTS)]
 
     # Set belief values
