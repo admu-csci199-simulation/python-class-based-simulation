@@ -9,6 +9,11 @@ from collections import deque
 def mapGraphToAgents():
     agents = Agent.generateAgents()
     DiGraph = GenerateGraph.generateSBMGraph()
+    # Access block assignments from the graph
+    # print(DiGraph.nodes)
+    # block_assignments = [DiGraph.nodes[node].get('block') for node in DiGraph.nodes()]
+    # for v in block_assignments:
+    #     print(v)
     for u, v in DiGraph.edges():
         agents[u].addFollower(agents[v])
     return agents
@@ -17,7 +22,7 @@ def setupPosts(agentsList):
     postsList = []
     
     # for choosing a certain belief value
-    chosenBeliefValues = [-3]
+    chosenBeliefValues = [-4]
     for i in range(len(chosenBeliefValues)):
         for agentID in range(Constants.N_AGENTS):
             if agentsList[agentID].beliefValue == chosenBeliefValues[i]:

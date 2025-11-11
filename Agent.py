@@ -11,18 +11,16 @@ def generateAgents(seed=Constants.GRAPH_SEED):
 
     # Set belief values
     # assumption: cluster sizes are equal
-    map = ['red', 'centrist', 'blue']
-    colorCount = [200, 70, 30] # red centrist blue
+    colorCount = [200, 80, 20] # red centrist blue
+    colorIndex = 0 
     for agentIdx in range(Constants.N_AGENTS):
         # clusterIdx = agentIdx//(Constants.N_AGENTS//3)
         # minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[clusterIdx]
-        colorIndex = random.randint(0, 2)
-        while colorCount[colorIndex] == 0:
-            colorIndex = random.randint(0, 2)
-
         assignedBeliefValue = random.randint(Constants.BELIEF_VALUES[colorIndex][0], Constants.BELIEF_VALUES[colorIndex][1])
         colorCount[colorIndex] -= 1
-        print(colorCount, colorIndex)
+        if colorCount[colorIndex] == 0:
+            colorIndex += 1
+        # print(colorCount, colorIndex)
         agents[agentIdx].setBeliefValue(assignedBeliefValue)
     
     # Set steepness tolerance
