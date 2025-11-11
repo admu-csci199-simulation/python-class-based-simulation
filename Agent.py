@@ -48,7 +48,7 @@ def generateAgents(seed=Constants.GRAPH_SEED):
         minOfflineDuration, maxOfflineDuration = Constants.AGENT_DURATION["offline"]
         assignedOnlineDuration = random.randint(minOnlineDuration, maxOnlineDuration)
         assignedOfflineDuration = random.randint(minOfflineDuration, maxOfflineDuration)
-        assignedStartingStatus = "Online" # ASSUMED
+        assignedStartingStatus = random.choice(["Online", "Offline"])
         agents[idxRandom[idx]].setActiveDuration(assignedOnlineDuration, assignedOfflineDuration, assignedStartingStatus)
         idx += 1
     
