@@ -22,6 +22,9 @@ class Post:
         self.originalPoster = originalPoster
         self.interactions = []
     
+    def __repr__(self):
+        return f"post_{self.postID}"
+
     def getBeliefValue(self) -> int:
         return self.beliefValue
     
