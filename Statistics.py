@@ -305,39 +305,62 @@ class Statistics:
 
     def generateActiveStatusChart(self, figsize=Constants.FIG_SIZE, saveDir=Constants.GRAPHS_DIR):
         """
-        Generates a line chart showing the count of online agents at each time step.
+        Generates a bar chart showing online vs offline agents at each time step.
+        Positive bars (above y=0) are online counts, negative bars (below y=0) are offline counts.
         """
-        # Count online agents at each time step
+        # Count online agents at each time step (using the same step as before)
         onlineCountPerTime = defaultdict(int)
-        
-        for currentTime in range(0, Constants.MAXIMUM_TIME, 30):
+        sample_times = list(range(0, Constants.MAXIMUM_TIME, 15))
+        for currentTime in sample_times:
             for agent in self.agents:
                 if agent.isOnline(currentTime):
                     onlineCountPerTime[currentTime] += 1
-        
+
         times = sorted(onlineCountPerTime.keys())
-        counts = [onlineCountPerTime[t] for t in times]
-        
         if not times:
             print("No time data to plot.")
             return
-        
-        # Create the line chart
+
+        online_counts = [onlineCountPerTime[t] for t in times]
+        total_agents = max(1, len(self.agents))
+        offline_counts = [total_agents - o for o in online_counts]
+
+        x = np.array(times)
+        # choose a reasonable bar width based on time spacing
+        if len(times) > 1:
+            spacing = np.min(np.diff(x))
+            width = spacing * 0.8
+        else:
+            width = 10.0
+
+        # positive for online, negative for offline
+        heights_online = online_counts
+        heights_offline = [-v for v in offline_counts]
+
         fig, ax = plt.subplots(figsize=figsize)
-        ax.plot(times, counts, linewidth=2, color='#3498db', marker='o', markersize=3)
-        
+        ax.bar(x, heights_online, width=width, color='#2ecc71', label='Online')
+        ax.bar(x, heights_offline, width=width, color='#e74c3c', label='Offline')
+
+        ax.axhline(0, color='black', linewidth=0.8)
+
         ax.set_xlabel("Time (minutes)")
-        ax.set_ylabel("Number of Online Agents")
-        ax.set_title("Online Agent Count Over Time")
-        ax.set_xticks(times[::max(1, len(times)//15)])
-        ax.set_xticklabels(times[::max(1, len(times)//15)], rotation=45)
-        ax.grid(True, alpha=0.3)
-        
+        ax.set_ylabel("Agent count (positive = online, negative = offline)")
+        ax.set_title("Online vs Offline Agent Count Over Time")
+        step = max(1, len(times) // 15)
+        ax.set_xticks(times[::step])
+        ax.set_xticklabels(times[::step], rotation=45)
+        ax.legend(loc='upper right')
+        ax.grid(True, axis='y', alpha=0.3)
+
+        # symmetric y-limits so zero is centered visually
+        max_count = max(max(online_counts), max(offline_counts), total_agents)
+        ax.set_ylim(-max_count * 1.05, max_count * 1.05)
+
         fig.tight_layout()
         os.makedirs(saveDir, exist_ok=True)
         fig.savefig(f"{saveDir}/active_status_chart.png")
         plt.close(fig)
-        
+
         return fig
 
     def generateGraphs(self, saveDir=''):
