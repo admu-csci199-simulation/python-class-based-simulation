@@ -1,7 +1,9 @@
 from math import lcm
+import random
 
 # NETWORK STRUCTURE CONSTANTS
 GRAPH_SEED = 100
+random.seed(GRAPH_SEED)
 
 # divisible by:
 #   3 -     # of blocks/clusters

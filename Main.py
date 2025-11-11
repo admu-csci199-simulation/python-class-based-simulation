@@ -29,6 +29,7 @@ def setupPosts(agentsList):
     
     postsList.sort(key=lambda post: post.postingTime)
     postsQueue = deque(postsList)
+    print(postsList)
     return postsQueue
 
 def simulationProper(postsQueue, simulationAgentsList):
@@ -38,6 +39,7 @@ def simulationProper(postsQueue, simulationAgentsList):
             simulationAgentsList[currentPost.originalPoster].sharePost(currentPost)
             simulationAgentsList[currentPost.originalPoster].sharedPosts.add(currentPost.postID)
             postsQueue.popleft()
+            #continue
 
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]

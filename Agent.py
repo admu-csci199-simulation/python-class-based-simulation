@@ -7,7 +7,6 @@ import random
 
 
 def generateAgents(seed=Constants.GRAPH_SEED):
-    random.seed(seed)
     agents = [Agent() for i in range(Constants.N_AGENTS)]
 
     # Set belief values
@@ -150,6 +149,9 @@ class Agent:
 
     def acceptPost(self, time: int, post: "Post") -> None:
         "Does all needed processes once an agent accepts the contents of a post"
+        if post.postID in self.sharedPosts:
+            return
+        
         self.sharePost(post)
         # To do: all post interactions done by an agent will be stored in
         # a struct inherent to that agent, we can then just collect this later
@@ -162,6 +164,7 @@ class Agent:
                 post.getInterestValue()
             )
         )
+
         self.adjustBeliefValue(post.getBeliefValue())
         self.sharedPosts.add(post.postID)
 
