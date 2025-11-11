@@ -310,7 +310,7 @@ class Statistics:
         # Count online agents at each time step
         onlineCountPerTime = defaultdict(int)
         
-        for currentTime in range(Constants.MAXIMUM_TIME):
+        for currentTime in range(0, Constants.MAXIMUM_TIME, 30):
             for agent in self.agents:
                 if agent.isOnline(currentTime):
                     onlineCountPerTime[currentTime] += 1
