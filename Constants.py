@@ -15,9 +15,9 @@ HK_NEW_EDGES = 2
 HK_PROB_CLUSTERING = 0.3
 SBM_SIZES = [ N_AGENTS//3, N_AGENTS//3, N_AGENTS//3 ]
 SBM_PROB_MATRIX = [
-    [0.5, 0.05, 0.05],
-    [0.05, 0.4, 0.05],
-    [0.05, 0.05, 0.6],
+    [0.18, 0.03, 0.03],
+    [0.03, 0.18, 0.03],
+    [0.03, 0.03, 0.18],
 ]
 
 # AGENT GENERATION PARAMETERS
