@@ -49,7 +49,8 @@ def generateAgents(seed=Constants.GRAPH_SEED):
         assignedOnlineDuration = random.randint(minOnlineDuration, maxOnlineDuration)
         assignedOfflineDuration = random.randint(minOfflineDuration, maxOfflineDuration)
         assignedStartingStatus = random.choice(["Online", "Offline"])
-        agents[idxRandom[idx]].setActiveDuration(assignedOnlineDuration, assignedOfflineDuration, assignedStartingStatus)
+        assignedOfflineStartOffset = random.randint(0, (assignedOnlineDuration if assignedStartingStatus=="Online" else assignedOfflineDuration) - 1)
+        agents[idxRandom[idx]].setActiveDuration(assignedOnlineDuration, assignedOfflineDuration, assignedStartingStatus, assignedOfflineStartOffset)
         idx += 1
     
     return agents
@@ -66,6 +67,7 @@ class Agent:
         self.onlineDuration = 0
         self.offlineDuration = 0
         self.startingStatus = ""
+        self.offlineStartOffset = 0
         
         self.followers = [] # followers instances
         self.feedQueue = []
@@ -97,7 +99,7 @@ class Agent:
         """
         self.sharePropensity = sharePropensity
 
-    def setActiveDuration(self, onlineDuration, offlineDuration, startingStatus) -> None:
+    def setActiveDuration(self, onlineDuration, offlineDuration, startingStatus, offlineStartOffset) -> None:
         """
         online/offline duration ranges from 1-8 hours.
         alternating between online and offline. cut if exceeds 48 hours
@@ -105,6 +107,7 @@ class Agent:
         self.onlineDuration = onlineDuration
         self.offlineDuration = offlineDuration
         self.startingStatus = startingStatus
+        self.offlineStartOffset = offlineStartOffset
 
     def getDCCProbability(self, post: Post, time: int) -> float:
         "Get the Defensive Cognitive Cascade Probability given a Post."
@@ -175,9 +178,9 @@ class Agent:
     def isOnline(self, t: int) -> bool:
         "Returns current status of the agent."
         if self.startingStatus == "Online":
-            return t % (self.onlineDuration + self.offlineDuration) < self.onlineDuration
+            return (t+self.offlineStartOffset) % (self.onlineDuration + self.offlineDuration) < self.onlineDuration
         elif self.startingStatus == "Offline":
-            return not t % (self.onlineDuration + self.offlineDuration) < self.offlineDuration
+            return not ((t+self.offlineStartOffset) % (self.onlineDuration + self.offlineDuration) < self.offlineDuration)
         assert(False)
 
     def addFollower(self, otherIdx: int) -> None:
