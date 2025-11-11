@@ -17,31 +17,31 @@ def setupPosts(agentsList):
     postsList = []
     
     # for choosing a certain belief value
-    # chosenBeliefValues = [-3]
-    # for i in range(len(chosenBeliefValues)):
-    #     for agentID in range(Constants.N_AGENTS):
-    #         if agentsList[agentID].beliefValue == chosenBeliefValues[i]:
-    #             postsList.append(
-    #                 Post.generatePost(
-    #                     postID = i,
-    #                     postingTime = 0,
-    #                     originalPoster =  agentID,
-    #                     beliefValue = chosenBeliefValues[i]
-    #                 )
-    #             )
-    #             break
+    chosenBeliefValues = [-3]
+    for i in range(len(chosenBeliefValues)):
+        for agentID in range(Constants.N_AGENTS):
+            if agentsList[agentID].beliefValue == chosenBeliefValues[i]:
+                postsList.append(
+                    Post.generatePost(
+                        postID = i,
+                        postingTime = 0,
+                        originalPoster =  agentID,
+                        beliefValue = chosenBeliefValues[i]
+                    )
+                )
+                break
 
-    for i in range(Constants.N_INITIAL_POSTS):
-        chosenPosterID = random.randint(0, Constants.N_AGENTS-1) # Is it possible to skew this so that chosenPoster is more likely to be an active agent
-        postsList.append(
-            Post.generatePost(
-                postID = i,
-                postingTime=0, # just for this one case
-                originalPoster = chosenPosterID,
-                beliefValue = agentsList[chosenPosterID].beliefValue
+    # for i in range(Constants.N_INITIAL_POSTS):
+    #     chosenPosterID = random.randint(0, Constants.N_AGENTS-1) # Is it possible to skew this so that chosenPoster is more likely to be an active agent
+    #     postsList.append(
+    #         Post.generatePost(
+    #             postID = i,
+    #             postingTime=0, # just for this one case
+    #             originalPoster = chosenPosterID,
+    #             beliefValue = agentsList[chosenPosterID].beliefValue
 
-            )
-        )
+    #         )
+    #     )
     
     postsList.sort(key=lambda post: post.postingTime)
     postsQueue = deque(postsList)
