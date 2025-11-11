@@ -303,7 +303,43 @@ class Statistics:
             plt.close(fig)
             saved_paths[camp] = fname
 
-    
+    def generateActiveStatusChart(self, figsize=Constants.FIG_SIZE, saveDir=Constants.GRAPHS_DIR):
+        """
+        Generates a line chart showing the count of online agents at each time step.
+        """
+        # Count online agents at each time step
+        onlineCountPerTime = defaultdict(int)
+        
+        for currentTime in range(Constants.MAXIMUM_TIME):
+            for agent in self.agents:
+                if agent.isOnline(currentTime):
+                    onlineCountPerTime[currentTime] += 1
+        
+        times = sorted(onlineCountPerTime.keys())
+        counts = [onlineCountPerTime[t] for t in times]
+        
+        if not times:
+            print("No time data to plot.")
+            return
+        
+        # Create the line chart
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.plot(times, counts, linewidth=2, color='#3498db', marker='o', markersize=3)
+        
+        ax.set_xlabel("Time (minutes)")
+        ax.set_ylabel("Number of Online Agents")
+        ax.set_title("Online Agent Count Over Time")
+        ax.set_xticks(times[::max(1, len(times)//15)])
+        ax.set_xticklabels(times[::max(1, len(times)//15)], rotation=45)
+        ax.grid(True, alpha=0.3)
+        
+        fig.tight_layout()
+        os.makedirs(saveDir, exist_ok=True)
+        fig.savefig(f"{saveDir}/active_status_chart.png")
+        plt.close(fig)
+        
+        return fig
+
     def generateGraphs(self, saveDir=''):
         os.makedirs(saveDir, exist_ok=True)
         self.generateBeliefTypePieChart(saveDir=saveDir)
@@ -312,3 +348,4 @@ class Statistics:
         self.generateAgentDemogGraph(saveDir=saveDir)
         self.generateBeliefTypePieChart(saveDir=saveDir)
         self.generateAgentTypesPerCamp(saveDir=saveDir)
+        self.generateActiveStatusChart(saveDir=saveDir)
