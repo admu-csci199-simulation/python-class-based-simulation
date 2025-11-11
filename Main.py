@@ -17,19 +17,19 @@ def setupPosts(agentsList):
     postsList = []
     for i in range(Constants.N_INITIAL_POSTS):
         chosenPosterID = random.randint(0, Constants.N_AGENTS-1) # Is it possible to skew this so that chosenPoster is more likely to be an active agent
-        # print(chosenPosterID)
         postsList.append(
             Post.generatePost(
                 postID = i,
                 postingTime=0, # just for this one case
                 originalPoster = chosenPosterID,
                 beliefValue = agentsList[chosenPosterID].beliefValue
+
             )
         )
     
     postsList.sort(key=lambda post: post.postingTime)
     postsQueue = deque(postsList)
-    print(postsList)
+    print("Posts:", postsList)
     return postsQueue
 
 def simulationProper(postsQueue, simulationAgentsList):
