@@ -169,13 +169,10 @@ class Statistics:
         """
         Creates a pie chart of agent types.
         """
-        counts = {"gullible": 0, "normal": 0, "stubborn": 0, "unknown": 0}
+        counts = {"gullible": 0, "normal": 0, "stubborn": 0}
         for agent in self.agents:
             type = agent.classifyAgentType()
-            if type not in counts:
-                counts["unknown"] += 1
-            else:
-                counts[type] += 1
+            counts[type] += 1
 
         labels = list(counts.keys())
         values = list(counts.values())
@@ -195,10 +192,10 @@ class Statistics:
             textprops={"fontsize": 10}
         )
 
-        ax.set_title(f"Agent Type Distribution")
+        ax.set_title(f"Response Type Distribution")
         ax.axis("equal") 
 
-        fig.savefig(f"{saveDir}/agent_type_distribution.png", bbox_inches="tight")
+        fig.savefig(f"{saveDir}/response_type_distribution.png", bbox_inches="tight")
         plt.close(fig)
 
         return fig
@@ -208,13 +205,10 @@ class Statistics:
             Generates a pie chart showing the distribution of agents
             based on their beliefValue (red, centrist, blue).
         """
-        counts = {"red": 0, "centrist": 0, "blue": 0, "unknown": 0}
+        counts = {"red": 0, "centrist": 0, "blue": 0}
         for agent in self.agents:
             type = agent.classifyAgentBelief()
-            if type not in counts:
-                counts["unknown"] += 1
-            else:
-                counts[type] += 1
+            counts[type] += 1
 
         labels = list(counts.keys())
         sizes = list(counts.values())
@@ -237,7 +231,7 @@ class Statistics:
         ax.set_title(f"Agent Belief Distribution")
         ax.axis("equal")
 
-        fig.savefig(f"{saveDir}/_agent_belief_distribution.png", bbox_inches="tight")
+        fig.savefig(f"{saveDir}/agent_belief_distribution.png", bbox_inches="tight")
         plt.close(fig)
 
         return fig
@@ -253,26 +247,17 @@ class Statistics:
 
         # initialize nested counters: camp -> type -> count
         camps = ["red", "centrist", "blue"]
-        types = ["gullible", "normal", "stubborn", "unknown"]
+        types = ["gullible", "normal", "stubborn"]
         camp_counts = {camp: {t: 0 for t in types} for camp in camps}
 
         # fill counts
         for agent in self.agents:
-            try:
-                camp = agent.classifyAgentBelief()
-            except Exception:
-                camp = "unknown"
-            try:
-                a_type = agent.classifyAgentType()
-            except Exception:
-                a_type = "unknown"
+            camp = agent.classifyAgentBelief()
+            a_type = agent.classifyAgentType()
 
             if camp not in camp_counts:
                 # ignore agents whose belief isn't one of the three camps
                 continue
-
-            if a_type not in camp_counts[camp]:
-                a_type = "unknown"
             camp_counts[camp][a_type] += 1
 
         saved_paths = {}
@@ -295,10 +280,10 @@ class Statistics:
                 startangle=140,
                 textprops={"fontsize": 10}
             )
-            ax.set_title(f"{camp.capitalize()} camp — agent type composition")
+            ax.set_title(f"{camp.capitalize()} camp's response type composition")
             ax.axis("equal")
 
-            fname = os.path.join(saveDir, f"{(camp)}_camp_agent_types.png")
+            fname = os.path.join(saveDir, f"{(camp)}_camp_response_types.png")
             fig.savefig(fname, bbox_inches="tight")
             plt.close(fig)
             saved_paths[camp] = fname
