@@ -97,7 +97,116 @@ class Statistics:
             fig.savefig(f"{saveDir}/tick_post_{post}.png")
 
             plt.close(fig)
-    
+
+    def generatePerTickGraphsWithBelief(
+        self,
+        figsize: Tuple[int, int] = Constants.FIG_SIZE,
+        saveDir: str = Constants.GRAPHS_DIR,
+        postsSubset: List[str] = None
+    ) -> Dict[str, Tuple[plt.Figure, plt.Axes]]:
+        """
+            Parameters:
+            - figsize: tuple for figure size (width, height)
+            - saveDir: if provided, saves each figure as '{save_dir}/post_{post}.png
+            - postsSubset: optional list of posts to plot (default: all posts).
+        """
+        counts = self.countInteractionPerPost()
+        interactions = self._gatherInteractions()
+
+        times_from_counts = set(counts.keys()) if counts else set()
+        times_from_interactions = set()
+        for interaction in interactions:
+            t = interaction.time
+            times_from_interactions.add(t)
+        times = sorted(times_from_counts.union(times_from_interactions))
+
+        posts_all = sorted(
+            {interaction.post for interaction in interactions}
+        )
+
+        if postsSubset is not None:
+            posts = sorted(set(postsSubset))
+        else:
+            posts = posts_all
+
+        category_counts: Dict[object, Dict[object, List[int]]] = {}
+        for t in times:
+            category_counts[t] = {post: [0, 0, 0] for post in posts}
+
+        for interaction in interactions:
+            t = interaction.time
+            post = interaction.post
+            belief = interaction.agentBelief
+
+            belief_category = None  
+
+            if -4 <= belief <= -2:
+                belief_category = 0
+            elif -1 <= belief <= 1:
+                belief_category = 1
+            elif 2 <= belief <= 4:
+                belief_category = 2
+
+            category_counts[t][post][belief_category] += 1
+
+        times = sorted(times)
+
+        figs: Dict[str, Tuple[plt.Figure, plt.Axes]] = {}
+
+        colors = ["#A9221B", "#858585", "#07618f"]
+        labels = ["Red", "Centrist", "Blue"]
+
+        for post in posts:
+            fig, ax = plt.subplots(figsize=figsize)
+            cat0 = []
+            cat1 = []
+            cat2 = []
+            for t in times:
+                post_counts = category_counts.get(t, {}).get(post, [0, 0, 0])
+                cat0.append(post_counts[0])
+                cat1.append(post_counts[1])
+                cat2.append(post_counts[2])
+
+            x = list(times)
+
+            width = None
+            try:
+                numeric_x = [float(v) for v in x]
+                diffs = [j - i for i, j in zip(numeric_x[:-1], numeric_x[1:]) if (j - i) > 0]
+                if diffs:
+                    width = min(diffs) * 0.8
+            except Exception:
+                width = None
+
+            if width is not None:
+                p0 = ax.bar(x, cat0, width=width, color=colors[0], label=labels[0])
+                p1 = ax.bar(x, cat1, bottom=cat0, width=width, color=colors[1], label=labels[1])
+                bottom_cat0_cat1 = [a + b for a, b in zip(cat0, cat1)]
+                p2 = ax.bar(x, cat2, bottom=bottom_cat0_cat1, width=width, color=colors[2], label=labels[2])
+            else:
+                p0 = ax.bar(x, cat0, color=colors[0], label=labels[0])
+                p1 = ax.bar(x, cat1, bottom=cat0, color=colors[1], label=labels[1])
+                bottom_cat0_cat1 = [a + b for a, b in zip(cat0, cat1)]
+                p2 = ax.bar(x, cat2, bottom=bottom_cat0_cat1, color=colors[2], label=labels[2])
+
+            step = max(1, len(times) // 15)
+            xtick_positions = x[::step]
+            xtick_labels = [str(t) for t in xtick_positions]
+            ax.set_xticks(xtick_positions)
+            ax.set_xticklabels(xtick_labels, rotation=45)
+
+            ax.set_xlabel("Time")
+            ax.set_ylabel("Count of Interactions")
+            ax.set_title(f"Interactions for post: {post} (Stacked by Belief Category)")
+            ax.legend()
+
+            fig.tight_layout()
+            fig_path = os.path.join(saveDir, f"stacked_tick_post_{post}.png")
+            fig.savefig(fig_path)
+
+            figs[post] = (fig, ax)
+
+        return figs
 
     def aggregateCountsByBin(self, counts, binSize):
         """
@@ -357,3 +466,4 @@ class Statistics:
         self.generateBeliefTypePieChart(saveDir=saveDir)
         self.generateAgentTypesPerCamp(saveDir=saveDir)
         self.generateActiveStatusChart(saveDir=saveDir)
+        self.generatePerTickGraphsWithBelief(saveDir=saveDir)
