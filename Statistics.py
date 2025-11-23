@@ -67,11 +67,13 @@ class Statistics:
 
         times = sorted(counts.keys())
         if not times:
-            print("No interactions to plot.")
+            # print("No interactions to plot.")
+            pass
 
         posts = sorted({interaction.post for interaction in interactions})
         if not posts:
-            print("No posts found in interactions.")
+            # print("No posts found in interactions.")
+            pass
         
         figs: Dict[str, Tuple[plt.Digure, plt.Axes]] = {}
         os.makedirs(saveDir, exist_ok=True) 
@@ -141,7 +143,8 @@ class Statistics:
         allPosts = sorted({i.post for i in interactions})
 
         if not allPosts:
-            print("No posts found to plot.")
+            # print("No posts found to plot.")
+            pass
         
         os.makedirs(saveDir, exist_ok=True)
         for post in allPosts:
@@ -209,6 +212,23 @@ class Statistics:
         for agent in self.agents:
             type = agent.classifyAgentBelief()
             counts[type] += 1
+
+        # BRYAN
+        # tup = []
+        # i = 0
+        # colors = ['red', 'centrist', 'blue']
+        # for color, freq in counts.items():
+        #     # print(freq, end=' ')
+        #     # print(color, colors[i])
+        #     assert(color == colors[i])
+        #     tup.append(freq)
+        #     i += 1
+        # # print()
+        # tup = tuple(tup)
+        # assert(tup == tuple(counts.values()))
+        
+        return tuple(counts.values())
+
 
         labels = list(counts.keys())
         sizes = list(counts.values())
@@ -303,7 +323,7 @@ class Statistics:
 
         times = sorted(onlineCountPerTime.keys())
         if not times:
-            print("No time data to plot.")
+            # print("No time data to plot.")
             return
 
         online_counts = [onlineCountPerTime[t] for t in times]
@@ -350,10 +370,12 @@ class Statistics:
 
     def generateGraphs(self, saveDir=''):
         os.makedirs(saveDir, exist_ok=True)
-        self.generateBeliefTypePieChart(saveDir=saveDir)
+        return self.generateBeliefTypePieChart(saveDir=saveDir)
         # self.generatePerTickGraphs(saveDir=saveDir)
         # self.generateBinnedGraphs(saveDir=saveDir)
         # self.generateAgentDemogGraph(saveDir=saveDir)
-        self.generateBeliefTypePieChart(saveDir=saveDir)
+        # self.generateBeliefTypePieChart(saveDir=saveDir)
         # self.generateAgentTypesPerCamp(saveDir=saveDir)
         # self.generateActiveStatusChart(saveDir=saveDir)
+
+        

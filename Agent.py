@@ -6,12 +6,12 @@ import Constants
 import random
 
 
-def generateAgents(seed=Constants.GRAPH_SEED):
+def generateAgents(seed=Constants.GRAPH_SEED, ratio=(100,100,100)):
     agents = [Agent() for i in range(Constants.N_AGENTS)]
 
     # Set belief values
     # assumption: cluster sizes are equal
-    colorCount = [200, 80, 20] # red centrist blue
+    colorCount = list(ratio) # red centrist blue
     colorIndex = 0 
     for agentIdx in range(Constants.N_AGENTS):
         # clusterIdx = agentIdx//(Constants.N_AGENTS//3)
@@ -201,6 +201,8 @@ class Agent:
     def adjustBeliefValue(self, postBeliefValue: int) -> None:
         "Adjusts the agent belief value"
         beliefDiff = abs(postBeliefValue - self.beliefValue)
+        oldClassification = self.classifyAgentBelief()
+        oldBeliefValue = self.beliefValue
         newBeliefValue = 0
         if beliefDiff <= 2:
             newBeliefValue = postBeliefValue
@@ -211,7 +213,6 @@ class Agent:
         else:
             assert(False) # unexpected belief difference 
         self.beliefValue = newBeliefValue
-        self.beliefValue = newBeliefValue 
 
     def classifyAgentType(self) -> str:
         """

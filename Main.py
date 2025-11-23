@@ -6,23 +6,25 @@ import Post
 import Statistics
 from collections import deque
 
-def mapGraphToAgents():
-    agents = Agent.generateAgents()
-    DiGraph = GenerateGraph.generateSBMGraph()
+def mapGraphToAgents(ratio):
+    agents = Agent.generateAgents(ratio=ratio)
+    DiGraph = GenerateGraph.generateSBMGraph(sizes=ratio)
     # Access block assignments from the graph
+    # print("HERE")
     # print(DiGraph.nodes)
     # block_assignments = [DiGraph.nodes[node].get('block') for node in DiGraph.nodes()]
     # for v in block_assignments:
     #     print(v)
+
     for u, v in DiGraph.edges():
         agents[u].addFollower(agents[v])
     return agents
 
-def setupPosts(agentsList):
+def setupPosts(agentsList, postb):
     postsList = []
     
     # for choosing a certain belief value
-    chosenBeliefValues = [-4]
+    chosenBeliefValues = [postb]
     for i in range(len(chosenBeliefValues)):
         for agentID in range(Constants.N_AGENTS):
             if agentsList[agentID].beliefValue == chosenBeliefValues[i]:
@@ -50,7 +52,7 @@ def setupPosts(agentsList):
     
     postsList.sort(key=lambda post: post.postingTime)
     postsQueue = deque(postsList)
-    print("Posts:", postsList)
+    # print("Posts:", postsList)
     return postsQueue
 
 def simulationProper(postsQueue, simulationAgentsList):
@@ -71,12 +73,18 @@ def simulationProper(postsQueue, simulationAgentsList):
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
             currentAgent.addNewPostsToFeedQueue()
+        
+    
+            
+
+def run(ratio, postb):
+    agentsList = mapGraphToAgents(ratio)
+    stats = Statistics.Statistics(agentsList)
+    postsQueue = setupPosts(agentsList, postb)
+    
+    # stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
+    simulationProper(postsQueue, agentsList)
+    return stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)
 
 if __name__ == "__main__":
-    agentsList = mapGraphToAgents()
-    stats = Statistics.Statistics(agentsList)
-    postsQueue = setupPosts(agentsList)
-    
-    stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
-    simulationProper(postsQueue, agentsList)
-    stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)
+    run()
