@@ -82,3 +82,8 @@ FIG_SIZE = (8, 5)
 GRAPHS_DIR = f"graphs_{time.strftime('%Y-%m-%d_%H-%M-%S')}"
 PRE_SIM_GRAPHS_DIR = os.path.join(GRAPHS_DIR, "pre_sim")
 POST_SIM_GRAPHS_DIR = os.path.join(GRAPHS_DIR, "post_sim")
+
+# GIF
+GIF_FRAMES_DIR = f"{GRAPHS_DIR}/frames"
+GIF_OUT_PATH = f"{GRAPHS_DIR}/belief_type_pie_chart.gif" 
+GIF_DURATION = 2

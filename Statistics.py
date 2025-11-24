@@ -6,6 +6,7 @@ import numpy as np
 import os
 import Agent
 import Constants
+import imageio
 
 
 class Statistics:
@@ -233,7 +234,6 @@ class Statistics:
         binnedCounts = {bt: dict(posts) for bt, posts in binned.items()}
         return binnedTimes, binnedCounts
 
-
     def generateBinnedGraphs(self, binSize=Constants.BIN_SIZE, figsize=Constants.FIG_SIZE, saveDir=Constants.GRAPHS_DIR):
         """
         Creates one bar chart per post, aggregating interactions into time bins.
@@ -304,12 +304,13 @@ class Statistics:
         ax.set_title(f"Response Type Distribution")
         ax.axis("equal") 
 
+        os.makedirs(saveDir, exist_ok=True)
         fig.savefig(f"{saveDir}/response_type_distribution.png", bbox_inches="tight")
         plt.close(fig)
 
         return fig
 
-    def generateBeliefTypePieChart(self, saveDir=Constants.GRAPHS_DIR):
+    def generateBeliefTypePieChart(self, saveDir=Constants.GRAPHS_DIR, filename='default.png', addLabels=True):
         """
             Generates a pie chart showing the distribution of agents
             based on their beliefValue (red, centrist, blue).
@@ -319,7 +320,8 @@ class Statistics:
             type = agent.classifyAgentBelief()
             counts[type] += 1
 
-        labels = list(counts.keys())
+        
+        labels = list(counts.keys()) if addLabels else None
         sizes = list(counts.values())
         total = sum(sizes)
 
@@ -340,11 +342,61 @@ class Statistics:
         ax.set_title(f"Agent Belief Distribution")
         ax.axis("equal")
 
-        fig.savefig(f"{saveDir}/agent_belief_distribution.png", bbox_inches="tight")
+        os.makedirs(saveDir, exist_ok=True)
+        fig.savefig(f"{saveDir}/{filename}", bbox_inches="tight")
         plt.close(fig)
 
         return fig
-    
+
+    def generateGifBeliefType(
+        self,
+        sourceFolder=Constants.GIF_FRAMES_DIR,
+        outputPath=Constants.GIF_OUT_PATH,
+        duration=Constants.GIF_DURATION,  # normal per-frame duration (seconds)
+        buffer_seconds=10                 # freeze on first & last frame
+    ):
+        """
+        Creates a GIF from PNG images in sourceFolder using imageio.
+        Adds:
+            - infinite looping
+            - 3-second buffer on the first and last frame
+        """
+
+        os.makedirs(sourceFolder, exist_ok=True)
+        files = [f for f in os.listdir(sourceFolder) if f.endswith(".png")]
+
+        if not files:
+            print("No PNG images found in folder:", sourceFolder)
+            return
+
+        files.sort()  # ensure animation order
+        print(files)
+
+        # Load images
+        frames = []
+        for filename in files:
+            filepath = os.path.join(sourceFolder, filename)
+            frames.append(imageio.imread(filepath))
+
+        # Build per-frame durations
+        durations = []
+        for i in range(len(frames)):
+            if i == 0 or i == len(frames) - 1:
+                durations.append(buffer_seconds)   # hold for buffer
+            else:
+                durations.append(duration)         # normal duration
+
+        # Save GIF (imageio loops forever by default)
+        imageio.mimsave(
+            outputPath,
+            frames,
+            duration=durations,
+            loop=True
+        )
+
+        print(f"GIF saved to: {outputPath}")
+
+
     def generateAgentTypesPerCamp(self, figsize=Constants.FIG_SIZE, saveDir=Constants.GRAPHS_DIR):
         """
         Generate one pie chart per political camp (red, centrist, blue).
@@ -463,7 +515,8 @@ class Statistics:
         self.generatePerTickGraphs(saveDir=saveDir)
         self.generateBinnedGraphs(saveDir=saveDir)
         self.generateAgentDemogGraph(saveDir=saveDir)
-        self.generateBeliefTypePieChart(saveDir=saveDir)
+        self.generateBeliefTypePieChart(saveDir=saveDir, filename='agent_belief_distribution.png')
         self.generateAgentTypesPerCamp(saveDir=saveDir)
         self.generateActiveStatusChart(saveDir=saveDir)
         self.generatePerTickGraphsWithBelief(saveDir=saveDir)
+        self.generateGifBeliefType()

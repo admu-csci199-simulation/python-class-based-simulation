@@ -9,7 +9,8 @@ def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None
         originalPoster = random.randint(0, Constants.N_AGENTS-1)
     if postingTime is None:
         postingTime = 0
-    interestValue = random.randint(-4, 4)
+    interestValue = 4
+    print(interestValue)
     
     return Post(postID, beliefValue, interestValue, postingTime, originalPoster)
 

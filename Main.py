@@ -1,3 +1,4 @@
+import os
 import random
 import Agent
 import Constants
@@ -39,7 +40,6 @@ def setupPosts(agentsList):
                 postingTime=0, # just for this one case
                 originalPoster = chosenPosterID,
                 beliefValue = agentsList[chosenPosterID].beliefValue
-
             )
         )
     
@@ -66,6 +66,12 @@ def simulationProper(postsQueue, simulationAgentsList):
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
             currentAgent.addNewPostsToFeedQueue()
+        
+        if (currentTime <= 50):
+            saveDir = os.path.join(Constants.GRAPHS_DIR, 'animation')
+            filename = str(currentTime).zfill(4)
+            stats.generateBeliefTypePieChart(saveDir=Constants.GIF_FRAMES_DIR, filename=filename, addLabels=False)
+
 
 if __name__ == "__main__":
     agentsList = mapGraphToAgents()
