@@ -65,12 +65,11 @@ class Statistics:
         """
         counts = self.countInteractionPerPost()
         interactions = self._gatherInteractions()
-
         times = sorted(counts.keys())
         if not times:
             print("No interactions to plot.")
-
-        posts = sorted({interaction.post for interaction in interactions})
+        posts = sorted({interaction.post for interaction in interactions}, key=lambda post: post.postID)
+        print([post.beliefValue for post in posts])
         if not posts:
             print("No posts found in interactions.")
         
@@ -122,7 +121,8 @@ class Statistics:
         times = sorted(times_from_counts.union(times_from_interactions))
 
         posts_all = sorted(
-            {interaction.post for interaction in interactions}
+            {interaction.post for interaction in interactions},
+            key=lambda post: post.postID
         )
 
         if postsSubset is not None:
@@ -247,7 +247,7 @@ class Statistics:
         timesBinned, countsBinned = self.aggregateCountsByBin(counts, binSize)
 
         interactions = self._gatherInteractions()
-        allPosts = sorted({i.post for i in interactions})
+        allPosts = sorted({i.post for i in interactions}, key=lambda post: post.postID)
 
         if not allPosts:
             print("No posts found to plot.")
