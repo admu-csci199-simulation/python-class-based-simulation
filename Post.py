@@ -1,16 +1,15 @@
 import random
 import Constants
 
-
-def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None):
+def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None, interestValue=None):
     if beliefValue is None:
         beliefValue = random.randint(-4, 4)
     if originalPoster is None:
         originalPoster = random.randint(0, Constants.N_AGENTS-1)
     if postingTime is None:
         postingTime = 0
-    interestValue = 4
-    print(interestValue)
+    if interestValue is None:
+        interestValue = 4
     
     return Post(postID, beliefValue, interestValue, postingTime, originalPoster)
 

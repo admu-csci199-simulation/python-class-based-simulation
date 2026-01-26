@@ -1,0 +1,28 @@
+{
+    "Posts" : [
+        {
+            "postID" : 0,
+            "beliefValue" : -1,
+            "interestValue" : 4,
+            "postingTime" : 3
+        },
+        {
+            "postID" : 1,
+            "beliefValue" : -1,
+            "interestValue" : 4,
+            "postingTime" : 1
+        },
+        {
+            "postID" : 1,
+            "beliefValue" : -1,
+            "interestValue" : 4,
+            "postingTime" : 2
+        },
+        {
+            "postID" : 1,
+            "beliefValue" : -1,
+            "interestValue" : 4,
+            "postingTime" : 0
+        }
+    ]
+}
