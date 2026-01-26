@@ -1,4 +1,6 @@
 import os
+import argparse
+import json
 import random
 import Agent
 import Constants
@@ -14,23 +16,8 @@ def mapGraphToAgents():
         agents[u].addFollower(agents[v])
     return agents
 
-def setupPosts(agentsList):
+def randomizePosts(agentsList):
     postsList = []
-    
-    # for choosing a certain belief value
-    # chosenBeliefValues = [-3]
-    # for i in range(len(chosenBeliefValues)):
-    #     for agentID in range(Constants.N_AGENTS):
-    #         if agentsList[agentID].beliefValue == chosenBeliefValues[i]:
-    #             postsList.append(
-    #                 Post.generatePost(
-    #                     postID = i,
-    #                     postingTime = 0,
-    #                     originalPoster =  agentID,
-    #                     beliefValue = chosenBeliefValues[i]
-    #                 )
-    #             )
-    #             break
 
     for i in range(Constants.N_INITIAL_POSTS):
         chosenPosterID = random.randint(0, Constants.N_AGENTS-1) # Is it possible to skew this so that chosenPoster is more likely to be an active agent
@@ -45,10 +32,9 @@ def setupPosts(agentsList):
     
     postsList.sort(key=lambda post: post.postingTime)
     postsQueue = deque(postsList)
-    print("Posts:", postsList)
     return postsQueue
 
-def simulationProper(postsQueue, simulationAgentsList):
+def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent]):
     for currentTime in range(Constants.MAXIMUM_TIME):
         while (len(postsQueue) > 0 and postsQueue[0].postingTime == currentTime):
             currentPost = postsQueue[0]
@@ -72,11 +58,46 @@ def simulationProper(postsQueue, simulationAgentsList):
             filename = str(currentTime).zfill(4)
             stats.generateBeliefTypePieChart(saveDir=Constants.GIF_FRAMES_DIR, filename=filename, addLabels=False)
 
+def setupParameters():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--custom_post")
+    args = parser.parse_args()
+    
+    parameters = {}
+    if args.custom_post:        
+        parameters["custom_post"] = args.custom_post
+
+    return parameters
+
+
+def getCustomPosts(agentsList, filename):
+    with open(filename, 'r') as f:
+        data = json.load(f)
+    
+    postsQueue = []
+    for post in data["Posts"]:
+        postsQueue.append(
+            Post.generatePost(
+                postID = post["postID"],
+                postingTime= post["postingTime"],
+                originalPoster = random.randint(0, Constants.N_AGENTS-1),
+                beliefValue = post["beliefValue"],
+                interestValue = post["interestValue"]
+            )
+        )
+    return postsQueue
+
 
 if __name__ == "__main__":
+    parameters = setupParameters()
+
     agentsList = mapGraphToAgents()
     stats = Statistics.Statistics(agentsList)
-    postsQueue = setupPosts(agentsList)
+
+    if "custom_post" in parameters:
+        postsQueue = getCustomPosts(agentsList, parameters["custom_post"])
+    else:
+        postsQueue = randomizePosts(agentsList)
     
     stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
     simulationProper(postsQueue, agentsList)
