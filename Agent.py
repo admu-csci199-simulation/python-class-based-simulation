@@ -186,7 +186,8 @@ class Agent:
             return (t+self.offlineStartOffset) % (self.onlineDuration + self.offlineDuration) < self.onlineDuration
         elif self.startingStatus == "Offline":
             return not ((t+self.offlineStartOffset) % (self.onlineDuration + self.offlineDuration) < self.offlineDuration)
-        assert(False)
+        
+        raise RuntimeError("Agent is neither online or offline")
 
     def addFollower(self, otherIdx: int) -> None:
         "Appends agent to followers."
@@ -203,7 +204,7 @@ class Agent:
         elif beliefDiff <= 8:
             newBeliefValue = self.beliefValue + 1*(-1 if postBeliefValue < self.beliefValue else 1)
         else:
-            assert(False) # unexpected belief difference 
+            raise RuntimeError("Belief difference not in range [0, 8]")
         self.beliefValue = newBeliefValue
         self.beliefValue = newBeliefValue 
 
@@ -220,6 +221,8 @@ class Agent:
                (toleranceMin <= self.tolerance <= toleranceMax)
             ):
                 return typeName
+        
+        raise RuntimeError("Agent steepness and tolerance does not match any agent types")
             
     def classifyAgentBelief(self) -> str:
         """
@@ -229,3 +232,4 @@ class Agent:
             if self.beliefValue in values:
                 return beliefName
         
+        raise RuntimeError("Agent belief value not in range")
