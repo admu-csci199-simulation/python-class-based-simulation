@@ -109,6 +109,15 @@ class Agent:
         self.startingStatus = startingStatus
         self.offlineStartOffset = offlineStartOffset
 
+    def getCognitiveResponse(self, post: Post) -> float:
+        postBeliefValue = post.getBeliefValue()
+        postInterestValue = post.getInterestValue()
+        agentSteepness = self.steepness
+        agentTolerance = self.tolerance
+        beliefDistance = abs(postBeliefValue - self.beliefValue)
+        
+        return 1/(1 + EULER**(agentSteepness*(beliefDistance-agentTolerance) - postInterestValue))
+
     def getDCCProbability(self, post: Post, time: int) -> float:
         "Get the Defensive Cognitive Cascade Probability given a Post."
         postBeliefValue = post.getBeliefValue()
@@ -118,7 +127,7 @@ class Agent:
         beliefDistance = abs(postBeliefValue - self.beliefValue)
         interestDecayConstant = 4
 
-        dccProbability = 1/(1 + EULER**(agentSteepness*(beliefDistance-agentTolerance) - postInterestValue)) * self.sharePropensity * (1 - (time/2880)**interestDecayConstant)
+        dccProbability = self.getCognitiveResponse(post) * self.sharePropensity * (1 - (time/2880)**interestDecayConstant)
         return dccProbability
     
     def addPostToFeedBuffer(self, post) -> None:
@@ -168,7 +177,7 @@ class Agent:
             )
         )
 
-        self.adjustBeliefValue(post.getBeliefValue())
+        self.adjustBeliefValue(post)
         self.sharedPosts.add(post.postID)
 
     def hasPostBeenShared(self, post: "Post") -> bool:
@@ -193,19 +202,33 @@ class Agent:
         "Appends agent to followers."
         self.followers.append(otherIdx)
 
-    def adjustBeliefValue(self, postBeliefValue: int) -> None:
+    def adjustBeliefValue(self, post: Post) -> None:
         "Adjusts the agent belief value"
-        beliefDiff = abs(postBeliefValue - self.beliefValue)
-        newBeliefValue = 0
-        if beliefDiff <= 2:
-            newBeliefValue = postBeliefValue
-        elif beliefDiff <= 5:
-            newBeliefValue = self.beliefValue + 2*(-1 if postBeliefValue < self.beliefValue else 1)
-        elif beliefDiff <= 8:
-            newBeliefValue = self.beliefValue + 1*(-1 if postBeliefValue < self.beliefValue else 1)
+
+        cognitiveResponse = self.getCognitiveResponse(post)
+        oldBeliefValue = self.beliefValue
+        newBeliefValue = -1
+        if cognitiveResponse <= 0.33:
+            # No change
+            pass
+        elif cognitiveResponse <= 0.44:
+            # Minimal influence
+            newBeliefValue = self.beliefValue + 1*(-1 if post.beliefValue < self.beliefValue else 1)
+        elif cognitiveResponse <= 0.77:
+            # Partial influence
+            newBeliefValue = self.beliefValue + 2*(-1 if post.beliefValue < self.beliefValue else 1)
+        elif cognitiveResponse <= 1:
+            # Significant influence
+            newBeliefValue = self.beliefValue + 3*(-1 if post.beliefValue < self.beliefValue else 1)
         else:
-            raise RuntimeError("Belief difference not in range [0, 8]")
-        self.beliefValue = newBeliefValue
+            raise RuntimeError("Updated belief value error")
+        
+        # if updated belief value exceeds post belief value, clamp agent belief value to post belief value
+        if ((oldBeliefValue < post.beliefValue and newBeliefValue > post.beliefValue) 
+            or (oldBeliefValue > post.beliefValue and newBeliefValue < post.beliefValue)
+            ):
+            newBeliefValue = post.beliefValue
+        
         self.beliefValue = newBeliefValue 
 
     def classifyAgentType(self) -> str:
