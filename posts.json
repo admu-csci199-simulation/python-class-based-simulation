@@ -1,0 +1,88 @@
+{
+    "Posts": [
+        {
+            "postID": 0,
+            "postTopic": 5,
+            "beliefValue": -2,
+            "interestValue": 2,
+            "postingTime": 1124
+        },
+        {
+            "postID": 1,
+            "postTopic": 4,
+            "beliefValue": 4,
+            "interestValue": -4,
+            "postingTime": 1687
+        },
+        {
+            "postID": 2,
+            "postTopic": 3,
+            "beliefValue": -4,
+            "interestValue": 4,
+            "postingTime": 480
+        },
+        {
+            "postID": 3,
+            "postTopic": 5,
+            "beliefValue": -1,
+            "interestValue": -2,
+            "postingTime": 880
+        },
+        {
+            "postID": 4,
+            "postTopic": 4,
+            "beliefValue": 2,
+            "interestValue": 3,
+            "postingTime": 323
+        },
+        {
+            "postID": 5,
+            "postTopic": 3,
+            "beliefValue": 0,
+            "interestValue": -1,
+            "postingTime": 2713
+        },
+        {
+            "postID": 6,
+            "postTopic": 3,
+            "beliefValue": 0,
+            "interestValue": 2,
+            "postingTime": 2851
+        },
+        {
+            "postID": 7,
+            "postTopic": 2,
+            "beliefValue": 4,
+            "interestValue": 0,
+            "postingTime": 2688
+        },
+        {
+            "postID": 8,
+            "postTopic": 3,
+            "beliefValue": -4,
+            "interestValue": 1,
+            "postingTime": 1914
+        },
+        {
+            "postID": 9,
+            "postTopic": 2,
+            "beliefValue": -1,
+            "interestValue": -2,
+            "postingTime": 317
+        },
+        {
+            "postID": 10,
+            "postTopic": 3,
+            "beliefValue": 2,
+            "interestValue": 1,
+            "postingTime": 462
+        },
+        {
+            "postID": 11,
+            "postTopic": 4,
+            "beliefValue": 1,
+            "interestValue": 1,
+            "postingTime": 300
+        }
+    ]
+}

@@ -11,13 +11,13 @@ def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None
     if interestValue is None:
         interestValue = 4
     
-    return Post(postID, beliefValue, interestValue, postingTime, originalPoster)
+    return Post(postID, beliefValue, Value, postingTime, originalPoster)
 
 class Post:
-    def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster):
+    def __init__(self, postID, beliefValue, Value, postingTime, originalPoster):
         self.postID = postID
         self.beliefValue = beliefValue
-        self.interestValue = interestValue
+        self.Value = interestValue
         self.postingTime = postingTime
         self.originalPoster = originalPoster
         self.interactions = []
