@@ -73,7 +73,7 @@ def getCustomPosts(agentsList, filename):
     with open(filename, 'r') as f:
         data = json.load(f)
     
-    postsQueue = []
+    postsQueue = deque([])
     for post in data["Posts"]:
         postsQueue.append(
             Post.generatePost(
