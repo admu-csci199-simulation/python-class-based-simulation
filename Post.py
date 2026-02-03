@@ -13,7 +13,7 @@ def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None
     if postTopic is None:
         postTopic = random.randint(0, Constants.N_TOPICS-1)
     
-    return Post(postID, beliefValue, interestValue, postingTime, originalPoster)
+    return Post(postID, beliefValue, interestValue, postingTime, originalPoster, postTopic)
 
 class Post:
     def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster, postTopic):
