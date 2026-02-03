@@ -153,6 +153,8 @@ class Agent:
     def processFeed(self, time: int) -> None:
         "Process all queued posts in feedQueue."
         for post in self.feedQueue:
+            if Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
+                self.adjustBeliefValue(post)
             dccProbability = self.getDCCProbability(post, time)
             if BernoulliTrial(dccProbability):
                 self.acceptPost(time, post)
@@ -177,8 +179,11 @@ class Agent:
             )
         )
 
-        self.adjustBeliefValue(post)
         self.sharedPosts.add(post.postID)
+
+        # Update belief value after sharing
+        if not Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
+            self.adjustBeliefValue(post)
 
     def hasPostBeenShared(self, post: "Post") -> bool:
         "Checks if a post has already been shared by an agent"
