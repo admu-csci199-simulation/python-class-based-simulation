@@ -24,7 +24,6 @@ def randomizePosts(agentsList):
         postsList.append(
             Post.generatePost(
                 postID = i,
-                postingTime=0, # just for this one case
                 originalPoster = chosenPosterID,
                 beliefValue = agentsList[chosenPosterID].beliefValue
             )
@@ -82,7 +81,8 @@ def getCustomPosts(agentsList, filename):
                 postingTime= post["postingTime"],
                 originalPoster = random.randint(0, Constants.N_AGENTS-1),
                 beliefValue = post["beliefValue"],
-                interestValue = post["interestValue"]
+                interestValue = post["interestValue"],
+                postTopic = post["postTopic"]
             )
         )
     return postsQueue
