@@ -1,7 +1,7 @@
 import random
 import Constants
 
-def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None, interestValue=None):
+def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None, interestValue=None, postTopic=None):
     if beliefValue is None:
         beliefValue = random.randint(-4, 4)
     if originalPoster is None:
@@ -10,16 +10,19 @@ def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None
         postingTime = 0
     if interestValue is None:
         interestValue = 4
+    if postTopic is None:
+        postTopic = random.randint(0, Constants.N_TOPICS-1)
     
     return Post(postID, beliefValue, interestValue, postingTime, originalPoster)
 
 class Post:
-    def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster):
+    def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster, postTopic):
         self.postID = postID
         self.beliefValue = beliefValue
         self.interestValue = interestValue
         self.postingTime = postingTime
         self.originalPoster = originalPoster
+        self.postTopic = postTopic
         self.interactions = []
     
     def __repr__(self):
