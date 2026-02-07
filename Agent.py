@@ -229,8 +229,8 @@ class Agent:
             raise RuntimeError("Updated belief value error")
         
         # if updated belief value exceeds post belief value, clamp agent belief value to post belief value
-        if ((oldBeliefValue < post.beliefValue and newBeliefValue > post.beliefValue) 
-            or (oldBeliefValue > post.beliefValue and newBeliefValue < post.beliefValue)
+        if ((oldBeliefValue <= post.beliefValue and newBeliefValue > post.beliefValue) 
+            or (oldBeliefValue >= post.beliefValue and newBeliefValue < post.beliefValue)
             ):
             newBeliefValue = post.beliefValue
         
