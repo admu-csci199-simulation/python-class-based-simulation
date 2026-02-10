@@ -1,0 +1,46 @@
+{
+    "Posts" : [
+        {
+            "postID" : 0,
+            "beliefValue" : -4,
+            "interestValue" : 4,
+            "postingTime" : 0,
+            "postTopic" : 0
+        },
+        {
+            "postID" : 1,
+            "beliefValue" : 4,
+            "interestValue" : 4,
+            "postingTime" : 2,
+            "postTopic" : 0
+        },
+        {
+            "postID" : 2,
+            "beliefValue" : 4,
+            "interestValue" : 4,
+            "postingTime" : 4,
+            "postTopic" : 0
+        },
+        {
+            "postID" : 3,
+            "beliefValue" : 4,
+            "interestValue" : 4,
+            "postingTime" : 6,
+            "postTopic" : 0
+        },
+        {
+            "postID" : 4,
+            "beliefValue" : 4,
+            "interestValue" : 4,
+            "postingTime" : 8,
+            "postTopic" : 0
+        },
+        {
+            "postID" : 5,
+            "beliefValue" : 4,
+            "interestValue" : 4,
+            "postingTime" : 10,
+            "postTopic" : 0
+        }
+    ]
+}
