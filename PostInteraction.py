@@ -9,4 +9,5 @@ class PostInteraction:
         self.postInterestValue = postInterestValue # post interest value at time t
         self.isShared = isShared
 
-    
+    def getNthLayer(self):
+        return self.time - self.post.postingTime
