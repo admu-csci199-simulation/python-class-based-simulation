@@ -16,7 +16,7 @@ def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None
     return Post(postID, beliefValue, interestValue, postingTime, originalPoster, postTopic)
 
 class Post:
-    def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster, postTopic):
+    def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster, postTopic, isMisinformation=False):
         self.postID = postID
         self.beliefValue = beliefValue
         self.interestValue = interestValue
@@ -24,7 +24,8 @@ class Post:
         self.originalPoster = originalPoster
         self.postTopic = postTopic
         self.interactions = []
-    
+        self.isMisinformation = isMisinformation
+
     def __repr__(self):
         return f"post_{self.postID}"
 
