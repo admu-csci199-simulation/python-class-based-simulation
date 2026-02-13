@@ -158,6 +158,17 @@ class Agent:
             dccProbability = self.getDCCProbability(post, time)
             if BernoulliTrial(dccProbability):
                 self.acceptPost(time, post)
+            else:
+                # generate PostInteraction with isShared==False
+                self.interactionsDone.append(PostInteraction(      
+                        time=time,
+                        agent=self,
+                        agentBelief=self.beliefValue,
+                        post=post,
+                        postInterestValue=post.getInterestValue(),
+                        isShared=False
+                    )
+                )
 
         self.feedQueue.clear()
 
@@ -171,11 +182,12 @@ class Agent:
         # a struct inherent to that agent, we can then just collect this later
         # on in order to do statistics
         self.interactionsDone.append(PostInteraction(      
-                time,
-                self,
-                self.beliefValue,
-                post,
-                post.getInterestValue()
+                time=time,
+                agent=self,
+                agentBelief=self.beliefValue,
+                post=post,
+                postInterestValue=post.getInterestValue(),
+                isShared=True
             )
         )
 
