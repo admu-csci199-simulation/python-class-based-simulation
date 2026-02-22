@@ -1,0 +1,39 @@
+{
+    "Agents": {
+        "Agent Count": 9,
+        "Gullible Count": 3,
+        "Normal Count": 3,
+        "Stubborn Count": 3,
+        "Lurker Count": 3,
+        "Active Count": 3,
+        "Red Count": 3,
+        "Centrist Count": 3,
+        "Blue Count": 3
+    },
+    "Posts": [
+        {
+            "postID": 0,
+            "postTopic": 2,
+            "beliefValue": 4,
+            "interestValue": 9,
+            "postingTime": 19,
+            "misinformation?": true
+        },
+        {
+            "postID": 1,
+            "postTopic": 2,
+            "beliefValue": 4,
+            "interestValue": 12,
+            "postingTime": 368,
+            "misinformation?": false
+        },
+        {
+            "postID": 2,
+            "postTopic": 2,
+            "beliefValue": 4,
+            "interestValue": 15,
+            "postingTime": 769,
+            "misinformation?": false
+        }
+    ]
+}

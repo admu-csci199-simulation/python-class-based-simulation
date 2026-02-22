@@ -24,13 +24,10 @@ class App(ctk.CTk):
         self.resizable(False, False)
 
 
-    # ------------------------
-    # Frame Switching
-    # ------------------------
-
     def clear_frame(self):
         if self.current_frame:
             self.current_frame.destroy()
+
 
     def show_start_screen(self):
         self.clear_frame()
@@ -38,7 +35,6 @@ class App(ctk.CTk):
         self.current_frame.pack(padx=20, pady=20)
 
         self.auto_resize()
-
 
 
     def show_agent_screen(self):
@@ -59,13 +55,7 @@ class App(ctk.CTk):
         self.auto_resize()
 
 
-
-    # ------------------------
-    # JSON Upload Flow
-    # ------------------------
-
     def start_json_upload_flow(self):
-
         # Step 1 — Upload Agents.json
         agent_path = filedialog.askopenfilename(
             title="Select Agents JSON",
