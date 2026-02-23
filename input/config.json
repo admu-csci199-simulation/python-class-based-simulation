@@ -13,26 +13,50 @@
     "Posts": [
         {
             "postID": 0,
-            "postTopic": 2,
-            "beliefValue": 4,
-            "interestValue": 9,
-            "postingTime": 19,
-            "misinformation?": true
+            "beliefValue": -1,
+            "interestValue": 4,
+            "postingTime": 3
         },
         {
             "postID": 1,
+            "beliefValue": -1,
+            "interestValue": 4,
+            "postingTime": 1
+        },
+        {
+            "postID": 1,
+            "beliefValue": -1,
+            "interestValue": 4,
+            "postingTime": 2
+        },
+        {
+            "postID": 1,
+            "beliefValue": -1,
+            "interestValue": 4,
+            "postingTime": 0
+        },
+        {
+            "postID": 4,
             "postTopic": 2,
             "beliefValue": 4,
-            "interestValue": 12,
-            "postingTime": 368,
+            "interestValue": 10,
+            "postingTime": 4,
+            "misinformation?": true
+        },
+        {
+            "postID": 5,
+            "postTopic": 2,
+            "beliefValue": 4,
+            "interestValue": 13,
+            "postingTime": 721,
             "misinformation?": false
         },
         {
-            "postID": 2,
+            "postID": 6,
             "postTopic": 2,
             "beliefValue": 4,
-            "interestValue": 15,
-            "postingTime": 769,
+            "interestValue": 16,
+            "postingTime": 1398,
             "misinformation?": false
         }
     ]

@@ -2,6 +2,7 @@ from ui.PostFrame import PostFrame
 from ui.AgentFrame import AgentFrame
 from ui.PostFrame import PostFrame
 from ui.StartFrame import StartFrame
+from ui.SimulateFrame import SimulateFrame
 from tkinter import filedialog
 
 import customtkinter as ctk
@@ -45,7 +46,6 @@ class App(ctk.CTk):
         self.auto_resize()
 
 
-
     def show_post_screen(self, agent_data):
         self.agent_data = agent_data
         self.clear_frame()
@@ -56,46 +56,55 @@ class App(ctk.CTk):
 
 
     def start_json_upload_flow(self):
-        # Step 1 — Upload Agents.json
-        agent_path = filedialog.askopenfilename(
-            title="Select Agents JSON",
+        file_path = filedialog.askopenfilename(
+            title="Select Config JSON",
             filetypes=[("JSON Files", "*.json")]
         )
 
-        if not agent_path:
+        if not file_path:
             return
 
         try:
-            with open(agent_path, "r", encoding="utf-8") as f:
-                self.agent_data = json.load(f)
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            # Validate structure
+            if "Agents" not in data or "Posts" not in data:
+                raise ValueError("Invalid config file. Must contain 'Agents' and 'Posts'.")
+
+            from pathlib import Path
+            Path("input").mkdir(exist_ok=True)
+
+            # Save to input/config.json
+            with open("input/config.json", "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+
+            # Load into memory
+            self.agent_data = data["Agents"]
+            self.posts = data["Posts"]
+
+            # Redirect to SimulateFrame
+            self.clear_frame()
+            self.current_frame = SimulateFrame(self, self)
+            self.current_frame.pack(padx=20, pady=20)
+            self.auto_resize()
+
         except Exception as e:
-            print("Agent JSON error:", e)
-            return
-
-        # Step 2 — Upload Posts.json
-        post_path = filedialog.askopenfilename(
-            title="Select Posts JSON",
-            filetypes=[("JSON Files", "*.json")]
-        )
-
-        if not post_path:
-            return
-
-        try:
-            with open(post_path, "r", encoding="utf-8") as f:
-                self.posts = json.load(f)
-        except Exception as e:
-            print("Post JSON error:", e)
-            return
-
-        # Go directly to Post screen
-        self.show_post_screen(self.agent_data)
+            print("Config JSON error:", e)
 
     def auto_resize(self):
-            self.update_idletasks()
-            width = self.winfo_reqwidth()
-            height = self.winfo_reqheight()
-            self.geometry(f"{width}x{height}")
+        self.update_idletasks()
+
+        width = self.winfo_reqwidth()
+        height = self.winfo_reqheight()
+
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        x = (screen_width // 2) - (width // 2)
+        y = (screen_height // 2) - (height // 2)
+
+        self.geometry(f"{width}x{height}+{x}+{y}")
 
 
 def run():

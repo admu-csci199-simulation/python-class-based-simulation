@@ -7,14 +7,23 @@ class AgentFrame(ctk.CTkFrame):
         super().__init__(parent)
         self.app = app
 
+        # Back
+        back_btn = ctk.CTkButton(
+            self,
+            text="← Back",
+            width=75,
+            command=self.go_back
+        )
+        back_btn.pack(anchor="w", padx=20, pady=(15, 5))
+
         # Title
         ctk.CTkLabel(
-            self, text="Agent Interface",
+            self,
+            text="Agent Interface",
             font=ctk.CTkFont(size=22, weight="bold")
-        ).pack(pady=(20, 10))
-
+        ).pack(pady=(10, 20))
+        
         self.entries = {}
-
         self.create_entry("Agent Count")
         self.create_section("Types")
         self.create_entry("Gullible Count")
@@ -134,3 +143,5 @@ class AgentFrame(ctk.CTkFrame):
                 text_color="red"
             )
 
+    def go_back(self):
+        self.app.show_start_screen()

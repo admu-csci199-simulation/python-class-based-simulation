@@ -2,6 +2,7 @@ import customtkinter as ctk
 import json
 import random
 from pathlib import Path
+from ui.SimulateFrame import SimulateFrame
 
 class PostFrame(ctk.CTkFrame):
     def __init__(self, parent, app):
@@ -341,7 +342,8 @@ class PostFrame(ctk.CTkFrame):
         with open("input/config.json", "w", encoding="utf-8") as f:
             json.dump(output, f, indent=4)
 
-        self.status.configure(
-            text="Saved to input/config.json",
-            text_color="green"
-        )
+        # Redirect to SimulateFrame
+        self.app.clear_frame()
+        self.app.current_frame = SimulateFrame(self.app, self.app)
+        self.app.current_frame.pack(padx=20, pady=20)
+        self.app.auto_resize()
