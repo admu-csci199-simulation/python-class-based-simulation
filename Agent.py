@@ -153,9 +153,22 @@ class Agent:
     def processFeed(self, time: int) -> None:
         "Process all queued posts in feedQueue."
         for post in self.feedQueue:
+            if Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
+                self.adjustBeliefValue(post)
             dccProbability = self.getDCCProbability(post, time)
             if BernoulliTrial(dccProbability):
                 self.acceptPost(time, post)
+            else:
+                # generate PostInteraction with isShared==False
+                self.interactionsDone.append(PostInteraction(      
+                        time=time,
+                        agent=self,
+                        agentBelief=self.beliefValue,
+                        post=post,
+                        postInterestValue=post.getInterestValue(),
+                        isShared=False
+                    )
+                )
 
         self.feedQueue.clear()
 
@@ -169,16 +182,20 @@ class Agent:
         # a struct inherent to that agent, we can then just collect this later
         # on in order to do statistics
         self.interactionsDone.append(PostInteraction(      
-                time,
-                self,
-                self.beliefValue,
-                post,
-                post.getInterestValue()
+                time=time,
+                agent=self,
+                agentBelief=self.beliefValue,
+                post=post,
+                postInterestValue=post.getInterestValue(),
+                isShared=True
             )
         )
 
-        self.adjustBeliefValue(post)
         self.sharedPosts.add(post.postID)
+
+        # Update belief value after sharing
+        if not Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
+            self.adjustBeliefValue(post)
 
     def hasPostBeenShared(self, post: "Post") -> bool:
         "Checks if a post has already been shared by an agent"
@@ -224,8 +241,8 @@ class Agent:
             raise RuntimeError("Updated belief value error")
         
         # if updated belief value exceeds post belief value, clamp agent belief value to post belief value
-        if ((oldBeliefValue < post.beliefValue and newBeliefValue > post.beliefValue) 
-            or (oldBeliefValue > post.beliefValue and newBeliefValue < post.beliefValue)
+        if ((oldBeliefValue <= post.beliefValue and newBeliefValue > post.beliefValue) 
+            or (oldBeliefValue >= post.beliefValue and newBeliefValue < post.beliefValue)
             ):
             newBeliefValue = post.beliefValue
         
