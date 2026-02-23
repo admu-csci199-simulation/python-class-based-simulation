@@ -1,0 +1,18 @@
+{
+    "Posts" : [
+        {
+            "postID" : 0,
+            "beliefValue" : -4,
+            "interestValue" : 4,
+            "postingTime" : 0,
+            "postTopic" : 0
+        },
+        {
+            "postID" : 1,
+            "beliefValue" : 4,
+            "interestValue" : 4,
+            "postingTime" : 0,
+            "postTopic" : 0
+        }
+    ]
+}
