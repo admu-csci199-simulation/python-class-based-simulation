@@ -38,8 +38,28 @@ class SimulateFrame(ctk.CTkFrame):
         )
         simulate_btn.grid(row=2, column=1, pady=20)
 
+        # Status label (NEW)
+        self.status = ctk.CTkLabel(self, text="")
+        self.status.grid(row=3, column=0, columnspan=2, pady=(10, 20))
+
     def go_back(self):
         self.app.show_start_screen()
 
     def simulate(self):
-        print("Simulation done (placeholder).")
+        try:
+            self.status.configure(text="Running simulation...", text_color="yellow")
+            self.update_idletasks()
+
+            from Main import runSimulation
+            runSimulation()
+
+            self.status.configure(
+                text="Simulation completed successfully!",
+                text_color="green"
+            )
+
+        except Exception as e:
+            self.status.configure(
+                text=f"Simulation failed: {str(e)}",
+                text_color="red"
+            )

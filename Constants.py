@@ -85,7 +85,7 @@ MAXIMUM_TIME = 48*60 # 48 hours in mins
 # STATISTICAL GRAPHS SETTINGS
 BIN_SIZE = 15
 FIG_SIZE = (8, 5)
-GRAPHS_DIR = f"graphs_{time.strftime('%Y-%m-%d_%H-%M-%S')}"
+GRAPHS_DIR = os.path.join("output", f'graphs_{time.strftime('%Y-%m-%d_%H-%M-%S')}')
 PRE_SIM_GRAPHS_DIR = os.path.join(GRAPHS_DIR, "pre_sim")
 POST_SIM_GRAPHS_DIR = os.path.join(GRAPHS_DIR, "post_sim")
 
