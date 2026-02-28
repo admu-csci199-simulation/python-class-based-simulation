@@ -529,17 +529,17 @@ class Statistics:
             postsLayers[post_id][nth_layer].append(agent)
 
         # TESTING CODE
-        for post_id, data in postsLayers.items():
-            print(f'Post ID: {post_id}')
-            totalAgents = 0
-            for i in range(min(data.keys()), max(data.keys()) + 1):
-                if i not in data:
-                    print(f"no Layer {i} in Post {post_id}.")
-                    continue
-                print(f'\tLayer: {i} has {len(data[i])} agents.')
-                totalAgents += len(data[i])
-            print(f"Post {post_id} was at least seen by {totalAgents} agents.")
-        # return postsLayers
+        # for post_id, data in postsLayers.items():
+        #     print(f'Post ID: {post_id}')
+        #     totalAgents = 0
+        #     for i in range(min(data.keys()), max(data.keys()) + 1):
+        #         if i not in data:
+        #             print(f"no Layer {i} in Post {post_id}.")
+        #             continue
+        #         print(f'\tLayer: {i} has {len(data[i])} agents.')
+        #         totalAgents += len(data[i])
+        #     print(f"Post {post_id} was at least seen by {totalAgents} agents.")
+        return postsLayers
 
 
     def generateGraphs(self, saveDir=''):
