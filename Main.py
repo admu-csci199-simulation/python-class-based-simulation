@@ -35,19 +35,23 @@ def randomizePosts(agentsList):
 
 def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent]):
     for currentTime in range(Constants.MAXIMUM_TIME):
+        # OPs posts their original posts at time currentTime
         while (len(postsQueue) > 0 and postsQueue[0].postingTime == currentTime):
             currentPost = postsQueue[0]
-            simulationAgentsList[currentPost.originalPoster].sharePost(currentPost)
+            nthLayer = 0 # all posts here are original posts, thus layer is 0
+            simulationAgentsList[currentPost.originalPoster].sharePost((currentPost, nthLayer))
             simulationAgentsList[currentPost.originalPoster].sharedPosts.add(currentPost.postID)
             postsQueue.popleft()
             #continue
 
+        # all agents process what is in their feed at time currentTime
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
             
             if (currentAgent.isOnline(currentTime)):
                 currentAgent.processFeed(currentTime)
         
+        # transfer all new posts from feedBuffer to feedQueue for all agents 
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
             currentAgent.addNewPostsToFeedQueue()
