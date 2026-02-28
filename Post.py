@@ -19,7 +19,7 @@ class Post:
     def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster, postTopic, isMisinformation=False):
         self.postID = postID
         self.beliefValue = beliefValue
-        self.Value = interestValue
+        self.interestValue = interestValue
         self.postingTime = postingTime
         self.originalPoster = originalPoster
         self.postTopic = postTopic
