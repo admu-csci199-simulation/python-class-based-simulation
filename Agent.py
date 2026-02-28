@@ -148,7 +148,7 @@ class Agent:
         "Share post to all neighbors of the agent."
         for agent in self.followers:
             if not agent.hasPostBeenShared(post):
-                agent.addPostToFeedBuffer((post, layer+1))
+                agent.addPostToFeedBuffer(post, layer+1)
     
     def processFeed(self, time: int) -> None:
         "Process all queued posts in feedQueue."
@@ -178,7 +178,7 @@ class Agent:
         if post.postID in self.sharedPosts:
             return
         
-        self.sharePost((post, layer))
+        self.sharePost(post, layer)
         # To do: all post interactions done by an agent will be stored in
         # a struct inherent to that agent, we can then just collect this later
         # on in order to do statistics
