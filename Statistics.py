@@ -521,7 +521,7 @@ class Statistics:
             if post_id not in postsLayers:
                 postsLayers[post_id] = {}
             
-            if nth_layer not in postLayers[post_id]:
+            if nth_layer not in postsLayers[post_id]:
                 postsLayers[post_id][nth_layer] = []
 
             postsLayers[post_id][nth_layer].append(agent)
