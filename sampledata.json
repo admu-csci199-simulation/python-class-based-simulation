@@ -1,0 +1,58 @@
+{
+    "static_data" : {
+        "post_count" : 10,
+        "agent_count" : 300,
+        "agent_response_type" : {
+            "gullible" : 100,
+            "normal" : 100,
+            "stubborn" : 100
+        },
+        "minutes" : 2880
+    },
+    
+    "post_interaction_data" : {
+        "post_0" : [0, 1, 2, 3, 4, 5],
+        "post_1" : [0, 1, 2, 3, 4, 5],
+        "post_2" : [0, 1, 2, 3, 4, 5]
+    },
+    
+    "dynamic_data" : [
+        {
+          "camp_distribution" : {
+            "red" : {"gullible" : 1, "normal" : 0, "stubborn" : 0, "infected": 0},
+            "centrist" : {"gullible" : 1, "normal" : 0, "stubborn" : 0, "infected": 0},
+            "blue" : {"gullible" : 1, "normal" : 0, "stubborn" : 0, "infected": 0}
+          },
+          "post_type_count_per_camp": {
+            "red" : {
+                "misinformation" : 2,
+                "regular" : 10,
+                "interactions" : 100
+            },
+            "centrist" : {
+                "misinformation" : 2,
+                "regular" : 10,
+                "interactions" : 100
+            },
+            "blue" : {
+                "misinformation" : 2,
+                "regular" : 10,
+                "interactions" : 100
+            }
+          },
+          "post_information" : {
+            "post_0" : {
+                "layer_information" : [10, 20, 30],
+                "isMisinformation" : true
+            }
+          }
+        },
+        {
+
+        },
+
+        {
+
+        }
+    ]
+}
