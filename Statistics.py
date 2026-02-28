@@ -513,28 +513,20 @@ class Statistics:
         interactions = self._gatherInteractions()
         postsLayers = {} # postID : {nth Layer : [agentID]}
 
-        # Track the nth layer of each agent with each post
-        first_interaction = {}  # (postID, agentID) : nth_layer
-
         for interaction in interactions:
+            if not interaction.isShared:
+                continue
             post_id = interaction.post.postID
-            agent_id = interaction.agent
-            nth_layer = interaction.getNthLayer()
-            
-            key = (post_id, agent_id)
-            if key not in first_interaction or nth_layer < first_interaction[key]:
-                first_interaction[key] = nth_layer
+            agent = interaction.agent
+            nth_layer = interaction.layer
 
-        # Build postsLayers from first interactions only
-        for (post_id, agent_id), nth_layer in first_interaction.items():
-            # Find the post object to get posting time
-            
             if post_id not in postsLayers:
                 postsLayers[post_id] = {}
+            
             if nth_layer not in postsLayers[post_id]:
                 postsLayers[post_id][nth_layer] = []
-            
-            postsLayers[post_id][nth_layer].append(agent_id)
+
+            postsLayers[post_id][nth_layer].append(agent)
 
         # TESTING CODE
         # for post_id, data in postsLayers.items():
@@ -547,7 +539,7 @@ class Statistics:
         #         print(f'\tLayer: {i} has {len(data[i])} agents.')
         #         totalAgents += len(data[i])
         #     print(f"Post {post_id} was at least seen by {totalAgents} agents.")
-        # return postsLayers
+        return postsLayers
 
 
     def generateGraphs(self, saveDir=''):
@@ -563,4 +555,4 @@ class Statistics:
         self.generateGifBeliefType()
         
         # for tests
-        # self.getLayersPerPosts()
+        self.getLayersPerPosts()

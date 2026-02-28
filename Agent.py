@@ -130,34 +130,34 @@ class Agent:
         dccProbability = self.getCognitiveResponse(post) * self.sharePropensity * (1 - (time/2880)**interestDecayConstant)
         return dccProbability
     
-    def addPostToFeedBuffer(self, post) -> None:
+    def addPostToFeedBuffer(self, post, layer) -> None:
         "Appends post to agent's feed buffer."
-        self.feedBuffer.add(post)
+        self.feedBuffer.add((post, layer))
             
     def addNewPostsToFeedQueue(self) -> None:
         "Adds posts from feed buffer to feed queue."
         if len(self.feedBuffer) == 0:
             return 
 
-        for post in self.feedBuffer:
-            self.feedQueue.append(post)
+        for post, layer in self.feedBuffer:
+            self.feedQueue.append((post, layer))
                 
         self.feedBuffer.clear() 
 
-    def sharePost(self, post) -> None:
+    def sharePost(self, post, layer) -> None:
         "Share post to all neighbors of the agent."
         for agent in self.followers:
             if not agent.hasPostBeenShared(post):
-                agent.addPostToFeedBuffer(post)
+                agent.addPostToFeedBuffer(post, layer+1)
     
     def processFeed(self, time: int) -> None:
         "Process all queued posts in feedQueue."
-        for post in self.feedQueue:
+        for post, layer in self.feedQueue:
             if Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
                 self.adjustBeliefValue(post)
             dccProbability = self.getDCCProbability(post, time)
             if BernoulliTrial(dccProbability):
-                self.acceptPost(time, post)
+                self.acceptPost(time, post, layer)
             else:
                 # generate PostInteraction with isShared==False
                 self.interactionsDone.append(PostInteraction(      
@@ -166,18 +166,19 @@ class Agent:
                         agentBelief=self.beliefValue,
                         post=post,
                         postInterestValue=post.getInterestValue(),
-                        isShared=False
+                        isShared=False,
+                        layer=layer
                     )
                 )
 
         self.feedQueue.clear()
 
-    def acceptPost(self, time: int, post: "Post") -> None:
+    def acceptPost(self, time: int, post: "Post", layer: int) -> None:
         "Does all needed processes once an agent accepts the contents of a post"
         if post.postID in self.sharedPosts:
             return
         
-        self.sharePost(post)
+        self.sharePost(post, layer)
         # To do: all post interactions done by an agent will be stored in
         # a struct inherent to that agent, we can then just collect this later
         # on in order to do statistics
@@ -187,7 +188,8 @@ class Agent:
                 agentBelief=self.beliefValue,
                 post=post,
                 postInterestValue=post.getInterestValue(),
-                isShared=True
+                isShared=True,
+                layer=layer
             )
         )
 
