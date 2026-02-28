@@ -9,6 +9,7 @@ class PostFrame(ctk.CTkFrame):
         super().__init__(parent)
         self.app = app
         self.posts = app.posts  # shared reference
+        self._original_interest_value = None
 
         # Grid config (for centering)
         self.grid_columnconfigure(0, weight=1)
@@ -176,19 +177,15 @@ class PostFrame(ctk.CTkFrame):
     def add_post(self):
         try:
             base_interest = int(self.interest_value.get())
-
             is_misinfo = self.misinformation_var.get()
 
             posts_added = 0
 
-            # Base interest bonus if misinformation
-            interest_val = base_interest
-            if is_misinfo:
-                interest_val += 3
+            # Apply +3 interest for OG misinformation
+            interest_val = base_interest + 3 if is_misinfo else base_interest
 
-            # -------------------
+
             # Create original post
-            # -------------------
             post_id = len(self.posts)
 
             original_post = {
@@ -197,52 +194,49 @@ class PostFrame(ctk.CTkFrame):
                 "beliefValue": int(self.belief_value.get()),
                 "interestValue": interest_val,
                 "postingTime": int(self.posting_time.get()),
-                "misinformation?": is_misinfo
+                "misinformation": is_misinfo,
+                "spawn": is_misinfo  # Only OG misinfo can spawn
             }
 
             self.posts.append(original_post)
             posts_added += 1
 
-            # -------------------
-            # Spawn 2 extra posts if misinformation
-            # -------------------
-            if is_misinfo:
 
-                original_time = int(self.posting_time.get())
-                previous_interest = interest_val  # original interest (already +3)
-                previous_time = original_time
+            # Spawn 2 additional posts (ONLY if OG misinfo)
+            if original_post["misinformation"] and original_post["spawn"]:
+
+                previous_interest = interest_val
+                previous_time = original_post["postingTime"]
 
                 for _ in range(2):
 
                     post_id = len(self.posts)
 
-                    # Progressive interest boost
+                    # Progressive interest growth
                     new_interest = previous_interest + 3
 
-                    # Sequential delay (5–12 hours)
+                    # Sequential 5–12 hour delay
                     delay = random.randint(300, 720)
                     new_time = previous_time + delay
 
                     spawned_post = {
                         "postID": post_id,
-                        "postTopic": int(self.post_topic.get()),
-                        "beliefValue": int(self.belief_value.get()),
+                        "postTopic": original_post["postTopic"],
+                        "beliefValue": original_post["beliefValue"],
                         "interestValue": new_interest,
                         "postingTime": new_time,
-                        "misinformation?": False
+                        "misinformation": True,
+                        "spawn": False  # Spawned posts cannot spawn again
                     }
 
                     self.posts.append(spawned_post)
 
-                    # Update for next loop
                     previous_interest = new_interest
                     previous_time = new_time
-
                     posts_added += 1
 
-            # -------------------
+
             # Status Message
-            # -------------------
             if posts_added == 3:
                 self.status.configure(
                     text="3 posts have been added",
@@ -254,9 +248,8 @@ class PostFrame(ctk.CTkFrame):
                     text_color="green"
                 )
 
-            # -------------------
+
             # Clear fields
-            # -------------------
             for entry in [
                 self.post_topic,
                 self.belief_value,
@@ -273,32 +266,72 @@ class PostFrame(ctk.CTkFrame):
                 text_color="red"
             )
 
-
     def generate_random_posts(self):
         try:
             count = int(self.random_count_entry.get())
             if count <= 0:
                 raise ValueError
 
-            start_id = len(self.posts)
+            posts_added = 0
 
-            for i in range(count):
-                post = {
-                    "postID": start_id + i,
+            for _ in range(count):
+                is_misinfo = random.choice([True, False])
+
+                base_interest = random.randint(-4, 4)
+                interest_val = base_interest + 3 if is_misinfo else base_interest
+
+                post_id = len(self.posts)
+
+                original_post = {
+                    "postID": post_id,
                     "postTopic": random.randint(1, 5),
                     "beliefValue": random.randint(-4, 4),
-                    "interestValue": random.randint(-4, 4),
+                    "interestValue": interest_val,
                     "postingTime": random.randint(0, 2880),
-                    "misinformation?": random.choice([True, False])
+                    "misinformation": is_misinfo,
+                    "spawn": is_misinfo
                 }
-                self.posts.append(post)
 
-            self.status.configure(
-                text=f"Generated {count} random posts",
-                text_color="green"
-            )
+                self.posts.append(original_post)
+                posts_added += 1
 
-            self.random_count_entry.delete(0, "end")
+
+                # Spawn logic for OG misinformation
+                if original_post["misinformation"] and original_post["spawn"]:
+
+                    previous_interest = interest_val
+                    previous_time = original_post["postingTime"]
+
+                    for _ in range(2):
+
+                        post_id = len(self.posts)
+
+                        new_interest = previous_interest + 3
+                        delay = random.randint(300, 720)
+                        new_time = previous_time + delay
+
+                        spawned_post = {
+                            "postID": post_id,
+                            "postTopic": original_post["postTopic"],
+                            "beliefValue": original_post["beliefValue"],
+                            "interestValue": new_interest,
+                            "postingTime": new_time,
+                            "misinformation": True,
+                            "spawn": False
+                        }
+
+                        self.posts.append(spawned_post)
+
+                        previous_interest = new_interest
+                        previous_time = new_time
+                        posts_added += 1
+
+                self.status.configure(
+                    text=f"{posts_added} posts have been added",
+                    text_color="green"
+                )
+
+                self.random_count_entry.delete(0, "end")
 
         except ValueError:
             self.status.configure(
@@ -307,29 +340,46 @@ class PostFrame(ctk.CTkFrame):
             )
 
     def toggle_misinformation_bonus(self):
+        current_text = self.interest_value.get().strip()
+
+        # Checkbox turned ON
         if self.misinformation_var.get():
+
             # Update label
             self.interest_label.configure(
                 text="Interest Value (+3)",
                 text_color="red"
             )
 
-            # Auto-add 3 if there is already a value
-            current = self.interest_value.get()
-            if current.strip() != "":
+            if current_text != "":
                 try:
-                    new_value = int(current) + 3
+                    current_value = int(current_text)
+
+                    # Store original only once
+                    self._original_interest_value = current_value
+
+                    boosted_value = current_value + 3
+
                     self.interest_value.delete(0, "end")
-                    self.interest_value.insert(0, str(new_value))
+                    self.interest_value.insert(0, str(boosted_value))
+
                 except ValueError:
                     pass
 
+        # Checkbox turned OFF
         else:
-            # Restore label
+
             self.interest_label.configure(
                 text="Interest Value",
                 text_color="white"
             )
+
+            # Restore original value if we have one
+            if self._original_interest_value is not None:
+                self.interest_value.delete(0, "end")
+                self.interest_value.insert(0, str(self._original_interest_value))
+
+            self._original_interest_value = None
 
     def save_json(self):
         output = {

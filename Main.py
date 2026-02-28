@@ -1,5 +1,4 @@
 import os
-import argparse
 import json
 import random
 import Agent
@@ -15,6 +14,7 @@ def mapGraphToAgents():
     for u, v in DiGraph.edges():
         agents[u].addFollower(agents[v])
     return agents
+
 
 def randomizePosts(agentsList):
     postsList = []
@@ -33,7 +33,8 @@ def randomizePosts(agentsList):
     postsQueue = deque(postsList)
     return postsQueue
 
-def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent]):
+
+def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats):
     for currentTime in range(Constants.MAXIMUM_TIME):
         while (len(postsQueue) > 0 and postsQueue[0].postingTime == currentTime):
             currentPost = postsQueue[0]
@@ -57,19 +58,9 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent]):
             filename = str(currentTime).zfill(4)
             stats.generateBeliefTypePieChart(saveDir=Constants.GIF_FRAMES_DIR, filename=filename, addLabels=False)
 
-def setupParameters():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--custom_post")
-    args = parser.parse_args()
-    
-    parameters = {}
-    if args.custom_post:        
-        parameters["custom_post"] = args.custom_post
 
-    return parameters
-
-
-def getCustomPosts(agentsList, filename):
+def readPosts(agentsList):
+    filename = os.path.join("input", "config.json")
     with open(filename, 'r') as f:
         data = json.load(f)
     
@@ -87,18 +78,29 @@ def getCustomPosts(agentsList, filename):
         )
     return postsQueue
 
-
-if __name__ == "__main__":
-    parameters = setupParameters()
-
+def runSimulation():
     agentsList = mapGraphToAgents()
-    stats = Statistics.Statistics(agentsList)
+    postsQueue = readPosts(agentsList)
 
-    if "custom_post" in parameters:
-        postsQueue = getCustomPosts(agentsList, parameters["custom_post"])
-    else:
-        postsQueue = randomizePosts(agentsList)
+    stats = Statistics.Statistics(agentsList)
     
     stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
-    simulationProper(postsQueue, agentsList)
+    simulationProper(postsQueue, agentsList, stats)
     stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)
+
+
+
+# if __name__ == "__main__":
+#     parameters = setupParameters()
+
+#     agentsList = mapGraphToAgents()
+#     stats = Statistics.Statistics(agentsList)
+
+#     if "custom_post" in parameters:
+#         postsQueue = getCustomPosts(agentsList, parameters["custom_post"])
+#     else:
+#         postsQueue = randomizePosts(agentsList)
+    
+#     stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
+#     simulationProper(postsQueue, agentsList)
+#     stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)

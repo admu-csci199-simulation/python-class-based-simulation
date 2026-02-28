@@ -13,51 +13,39 @@
     "Posts": [
         {
             "postID": 0,
-            "beliefValue": -1,
-            "interestValue": 4,
-            "postingTime": 3
+            "postTopic": 5,
+            "beliefValue": -3,
+            "interestValue": 2,
+            "postingTime": 1364,
+            "misinformation": true,
+            "spawn": true
         },
         {
             "postID": 1,
-            "beliefValue": -1,
-            "interestValue": 4,
-            "postingTime": 1
+            "postTopic": 5,
+            "beliefValue": -3,
+            "interestValue": 5,
+            "postingTime": 1706,
+            "misinformation": true,
+            "spawn": false
         },
         {
-            "postID": 1,
-            "beliefValue": -1,
-            "interestValue": 4,
-            "postingTime": 2
+            "postID": 2,
+            "postTopic": 5,
+            "beliefValue": -3,
+            "interestValue": 8,
+            "postingTime": 2296,
+            "misinformation": true,
+            "spawn": false
         },
         {
-            "postID": 1,
-            "beliefValue": -1,
-            "interestValue": 4,
-            "postingTime": 0
-        },
-        {
-            "postID": 4,
-            "postTopic": 2,
-            "beliefValue": 4,
-            "interestValue": 10,
-            "postingTime": 4,
-            "misinformation?": true
-        },
-        {
-            "postID": 5,
-            "postTopic": 2,
-            "beliefValue": 4,
-            "interestValue": 13,
-            "postingTime": 721,
-            "misinformation?": false
-        },
-        {
-            "postID": 6,
-            "postTopic": 2,
-            "beliefValue": 4,
-            "interestValue": 16,
-            "postingTime": 1398,
-            "misinformation?": false
+            "postID": 3,
+            "postTopic": 1,
+            "beliefValue": 3,
+            "interestValue": 3,
+            "postingTime": 316,
+            "misinformation": false,
+            "spawn": false
         }
     ]
 }
