@@ -514,6 +514,8 @@ class Statistics:
         postsLayers = {} # postID : {nth Layer : [agentID]}
 
         for interaction in interactions:
+            if not interaction.isShared:
+                continue
             post_id = interaction.post.postID
             agent = interaction.agent
             nth_layer = interaction.layer
