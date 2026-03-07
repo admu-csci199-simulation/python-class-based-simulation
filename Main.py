@@ -17,6 +17,31 @@ def mapGraphToAgents():
     return agents
 
 
+def generateStaticData(configData):
+    return {
+        "post_count": len(configData["Posts"]),
+        "agent_count": Constants.N_AGENTS,
+        "agent_response_type": {
+            agentType: values["count"]
+            for agentType, values in Constants.AGENT_TYPE.items()
+        },
+        "minutes": Constants.MAXIMUM_TIME
+    }
+
+
+def generateStaticPostInformation(postsQueue):
+    staticPostInformation = {}
+    for post in postsQueue:
+        postID = post.postID
+
+        staticPostInformation[f'post_{postID}'] = {
+            "isMisinformation": post.isMisinformation,
+            "post_camp": post.classifyBeliefCamp()
+        }
+
+    return staticPostInformation
+
+
 def randomizePosts(agentsList):
     postsList = []
 
@@ -35,7 +60,9 @@ def randomizePosts(agentsList):
     return postsQueue
 
 
-def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats):
+def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
+    postsQueue = readPosts(configData, simulationAgentsList)
+
     simulationData = {
         "static_data": {},
         "static_post_information": {},
@@ -43,20 +70,16 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
         "post_shared_data": {},
         "dynamic_data": []
     }
-
-    with open(os.path.join("input", "config.json"), "r") as f:
-        configData = json.load(f)
-
     simulationData["static_data"] = generateStaticData(configData)
     simulationData["static_post_information"] = generateStaticPostInformation(postsQueue)
 
-    # Track cumulative layer counts per post
+    # Dictionary for layer_information
     cumulativePostLayerCounts = {
         post["postID"]: {}
         for post in configData["Posts"]
     }
 
-    # Track cumulative post type counts per camp
+    # Dictionary for post_type_count_per_camp
     cumulativePostTypeCountPerCamp = {
         "red": {"misinformation": 0, "regular": 0, "interactions": 0},
         "centrist": {"misinformation": 0, "regular": 0, "interactions": 0},
@@ -69,7 +92,7 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
         for agentID in range(Constants.N_AGENTS)
     }
 
-    # For post_seen_data and post_shared_data
+    # Dictionary for post_seen_data and post_shared_data
     campIndex = {
         "red": 0,
         "centrist": 1,
@@ -103,6 +126,7 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
             posterID = currentPost.originalPoster
             posterCamp = currentPost.classifyBeliefCamp()
 
+            # Update published regular/misinformation post count of camps
             if currentPost.isMisinformation:
                 cumulativePostTypeCountPerCamp[posterCamp]["misinformation"] += 1
             else:
@@ -147,7 +171,7 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
                 posterCamp = simulationAgentsList[posterID].classifyAgentBelief()
                 isMisinfo = interaction.post.isMisinformation
 
-                # Update cumulative layer count
+                # Update layer_information count
                 if layer not in cumulativePostLayerCounts[postID]:
                     cumulativePostLayerCounts[postID][layer] = 0
                 cumulativePostLayerCounts[postID][layer] += 1
@@ -165,7 +189,7 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
             lastProcessedInteractionIndex[agentID] = len(agent.interactionsDone)
 
 
-        # Track camp distribution at each minute
+        # Dictionary for camp_distribution
         campDistribution = {
             "red": {"gullible": 0, "normal": 0, "stubborn": 0},
             "centrist": {"gullible": 0, "normal": 0, "stubborn": 0},
@@ -177,7 +201,7 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
             agentType = agent.classifyAgentType()
             campDistribution[camp][agentType] += 1
 
-        # Track layer_information
+        # Dictionary for layer_information
         postInformation = {}
         for post in configData["Posts"]:
             postID = post["postID"]
@@ -220,38 +244,11 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
 
     return simulationData
 
-def generateStaticData(configData):
-    return {
-        "post_count": len(configData["Posts"]),
-        "agent_count": Constants.N_AGENTS,
-        "agent_response_type": {
-            agentType: values["count"]
-            for agentType, values in Constants.AGENT_TYPE.items()
-        },
-        "minutes": Constants.MAXIMUM_TIME
-    }
 
-def generateStaticPostInformation(postsQueue):
-    staticPostInformation = {}
-    for post in postsQueue:
-        postID = post.postID
-
-        staticPostInformation[f'post_{postID}'] = {
-            "isMisinformation": post.isMisinformation,
-            "post_camp": post.classifyBeliefCamp()
-        }
-
-    return staticPostInformation
-
-
-def readPosts(agentsList):
-    filename = os.path.join("input", "config.json")
-    with open(filename, 'r') as f:
-        data = json.load(f)
-
+def readPosts(configData, agentsList):
     postsList = []
 
-    for post in data["Posts"]:
+    for post in configData["Posts"]:
         postsList.append(
             Post.generatePost(
                 postID=post["postID"],
@@ -272,31 +269,11 @@ def readPosts(agentsList):
 
 def runSimulation():
     agentsList = mapGraphToAgents()
-    postsQueue = readPosts(agentsList)
+    with open(os.path.join("input", "config.json"), "r") as f:
+        configData = json.load(f)
 
-    stats = Statistics.Statistics(agentsList)
-    
-    #stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
-    simulationData = simulationProper(postsQueue, agentsList, stats)
-    #stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)
-
+    simulationData = simulationProper(configData, agentsList)
 
     with open("output/simulation_output.json", "w") as f:
         json.dump(simulationData, f, indent=4)
     print("Simulation data saved in output/simulation_output.json")
-
-
-if __name__ == "__main__":
-    parameters = setupParameters()
-
-    agentsList = mapGraphToAgents()
-    stats = Statistics.Statistics(agentsList)
-
-    if "custom_post" in parameters:
-        postsQueue = getCustomPosts(agentsList, parameters["custom_post"])
-    else:
-        postsQueue = randomizePosts(agentsList)
-    
-    stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
-    simulationProper(postsQueue, agentsList)
-    stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)
