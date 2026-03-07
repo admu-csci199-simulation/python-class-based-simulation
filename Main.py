@@ -39,6 +39,8 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
     simulationData = {
         "static_data": {},
         "static_post_information": {},
+        "post_seen_data": {},
+        "post_shared_data": {},
         "dynamic_data": []
     }
 
@@ -65,6 +67,31 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
     lastProcessedInteractionIndex = {
         agentID: 0
         for agentID in range(Constants.N_AGENTS)
+    }
+
+    # For post_seen_data and post_shared_data
+    campIndex = {
+        "red": 0,
+        "centrist": 1,
+        "blue": 2
+    }
+    postSeenData = {}
+    postSharedData = {}
+
+    for post in configData["Posts"]:
+        postID = post["postID"]
+
+        postSeenData[f"post_{postID}"] = []
+        postSharedData[f"post_{postID}"] = []
+
+    postSeenCounters = {
+        post["postID"]: [0,0,0]
+        for post in configData["Posts"]
+    }
+
+    postSharedCounters = {
+        post["postID"]: [0,0,0]
+        for post in configData["Posts"]
     }
 
     # Start of simulation
@@ -97,6 +124,15 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
         # transfer all new posts from feedBuffer to feedQueue for all agents 
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
+
+            # Update post_seen_data
+            for post, layer in currentAgent.feedBuffer:
+                postID = post.postID
+                camp = currentAgent.classifyAgentBelief()
+                idx = campIndex[camp]
+
+                postSeenCounters[postID][idx] += 1
+
             currentAgent.addNewPostsToFeedQueue()
 
         for agentID in range(Constants.N_AGENTS):
@@ -116,10 +152,20 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
                     cumulativePostLayerCounts[postID][layer] = 0
                 cumulativePostLayerCounts[postID][layer] += 1
 
+                # Updated post_shared_data
+                if interaction.isShared:
+                    postID = interaction.post.postID
+                    camp = agent.classifyAgentBelief()
+                    idx = campIndex[camp]
+
+                    postSharedCounters[postID][idx] += 1
+
                 cumulativePostTypeCountPerCamp[posterCamp]["interactions"] += 1
 
             lastProcessedInteractionIndex[agentID] = len(agent.interactionsDone)
 
+
+        # Track camp distribution at each minute
         campDistribution = {
             "red": {"gullible": 0, "normal": 0, "stubborn": 0},
             "centrist": {"gullible": 0, "normal": 0, "stubborn": 0},
@@ -131,6 +177,7 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
             agentType = agent.classifyAgentType()
             campDistribution[camp][agentType] += 1
 
+        # Track layer_information
         postInformation = {}
         for post in configData["Posts"]:
             postID = post["postID"]
@@ -151,6 +198,20 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
 
         simulationData["dynamic_data"].append(snapshot)
 
+        # Update post_seen_data and post_shared_data
+        for post in configData["Posts"]:
+            postID = post["postID"]
+
+            postSeenData[f"post_{postID}"].append(
+                postSeenCounters[postID].copy()
+            )
+
+            postSharedData[f"post_{postID}"].append(
+                postSharedCounters[postID].copy()
+            )
+
+        simulationData["post_seen_data"] = postSeenData
+        simulationData["post_shared_data"] = postSharedData
 
         # if (currentTime <= 50):
         #     saveDir = os.path.join(Constants.GRAPHS_DIR, 'animation')
