@@ -46,20 +46,20 @@ class SimulateFrame(ctk.CTkFrame):
         self.app.show_start_screen()
 
     def simulate(self):
-        try:
-            self.status.configure(text="Running simulation...", text_color="yellow")
-            self.update_idletasks()
+        # try:
+        self.status.configure(text="Running simulation...", text_color="yellow")
+        self.update_idletasks()
 
-            from Main import runSimulation
-            runSimulation()
+        from Main import runSimulation
+        runSimulation()
 
-            self.status.configure(
-                text="Simulation completed successfully!",
-                text_color="green"
-            )
+        self.status.configure(
+            text="Simulation completed successfully!",
+            text_color="green"
+        )
 
-        except Exception as e:
-            self.status.configure(
-                text=f"Simulation failed: {str(e)}",
-                text_color="red"
-            )
+        # except Exception as e:
+            # self.status.configure(
+            #     text=f"Simulation failed: {str(e)}",
+            #     text_color="red"
+            # )

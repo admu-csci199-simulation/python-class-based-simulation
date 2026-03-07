@@ -1,7 +1,7 @@
 import random
 import Constants
 
-def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None, interestValue=None, postTopic=None):
+def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None, interestValue=None, postTopic=None, isMisinformation=None):
     if beliefValue is None:
         beliefValue = random.randint(-4, 4)
     if originalPoster is None:
@@ -12,11 +12,13 @@ def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None
         interestValue = 4
     if postTopic is None:
         postTopic = random.randint(0, Constants.N_TOPICS-1)
+    if isMisinformation is None:
+        isMisinformation = False
     
-    return Post(postID, beliefValue, interestValue, postingTime, originalPoster, postTopic)
+    return Post(postID, beliefValue, interestValue, postingTime, originalPoster, postTopic, isMisinformation)
 
 class Post:
-    def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster, postTopic, isMisinformation=False):
+    def __init__(self, postID, beliefValue, interestValue, postingTime, originalPoster, postTopic, isMisinformation):
         self.postID = postID
         self.beliefValue = beliefValue
         self.interestValue = interestValue
@@ -34,3 +36,13 @@ class Post:
     
     def getInterestValue(self) -> int:
         return self.interestValue
+    
+    def classifyBeliefCamp(self) -> str:
+        """
+        Returns 'red', 'centrist', or 'blue'
+        """
+        for beliefName, values in Constants.AGENT_BELIEF_TYPE.items():
+            if self.beliefValue in values:
+                return beliefName
+        
+        raise RuntimeError("Agent belief value not in range")
