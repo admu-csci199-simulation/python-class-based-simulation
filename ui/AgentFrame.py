@@ -25,7 +25,7 @@ class AgentFrame(ctk.CTkFrame):
         
         self.entries = {}
         self.create_entry("Agent Count")
-        self.create_section("Types")
+        self.create_section("Response Types")
         self.create_entry("Gullible Count")
         self.create_entry("Normal Count")
         self.create_entry("Stubborn Count")
