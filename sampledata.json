@@ -9,11 +9,38 @@
         },
         "minutes" : 2880
     },
+
+    "static_post_information" : {
+        "post_0" : {
+            "isMisinformation" : true,
+            "post_camp" : "Red"
+        },
+
+        "post_1" : {
+            "isMisinformation" : false,
+            "post_camp" : "Blue"
+        },
+
+        "post_3" : {
+            "isMisinformation" : false,
+            "post_camp" : "Centrist"
+        }
+    },
     
-    "post_interaction_data" : {
-        "post_0" : [0, 1, 2, 3, 4, 5],
+    "post_interaction_data" : { // shared + seen
+        "post_0" : [0, 1, 2, 3, 4, 5], // append 0s if no interactions, size should be 2880
         "post_1" : [0, 1, 2, 3, 4, 5],
         "post_2" : [0, 1, 2, 3, 4, 5]
+    },
+
+    "post_interaction_data" : { // shared + seen
+        "post_0" : [[0, 1, 2], [2, 1 0]], // divided per camp
+        "post_1" : [[0, 1, 2], [2, 1 0]],
+        "post_2" : [[0, 1, 2], [2, 1 0]],
+    },
+
+    "post_shared_data": { // shared only
+        
     },
     
     "dynamic_data" : [
@@ -43,7 +70,6 @@
           "post_information" : {
             "post_0" : {
                 "layer_information" : [10, 20, 30],
-                "isMisinformation" : true
             }
           }
         },

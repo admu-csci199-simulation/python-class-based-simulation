@@ -6,6 +6,7 @@ import Constants
 import GenerateGraph
 import Post
 import Statistics
+import copy
 from collections import deque
 
 def mapGraphToAgents():
@@ -35,10 +36,53 @@ def randomizePosts(agentsList):
 
 
 def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats):
+    for post in postsQueue:
+        print(post.postID)
+    simulationData = {
+        "static_data": {},
+        "static_post_information": {},
+        "dynamic_data": []
+    }
+
+    with open(os.path.join("input", "config.json"), "r") as f:
+        configData = json.load(f)
+
+    simulationData["static_data"] = generateStaticData(configData)
+    simulationData["static_post_information"] = generateStaticPostInformation(postsQueue)
+
+    # Track cumulative layer counts per post
+    cumulativePostLayerCounts = {
+        post["postID"]: {}
+        for post in configData["Posts"]
+    }
+
+    # Track cumulative post type counts per camp
+    cumulativePostTypeCountPerCamp = {
+        "red": {"misinformation": 0, "regular": 0, "interactions": 0},
+        "centrist": {"misinformation": 0, "regular": 0, "interactions": 0},
+        "blue": {"misinformation": 0, "regular": 0, "interactions": 0}
+    }
+
+    # Track last processed interaction index per agent
+    lastProcessedInteractionIndex = {
+        agentID: 0
+        for agentID in range(Constants.N_AGENTS)
+    }
+
+    # Start of simulation
     for currentTime in range(Constants.MAXIMUM_TIME):
         # OPs posts their original posts at time currentTime
         while (len(postsQueue) > 0 and postsQueue[0].postingTime == currentTime):
             currentPost = postsQueue[0]
+
+            posterID = currentPost.originalPoster
+            posterCamp = simulationAgentsList[posterID].classifyAgentBelief()
+
+            if currentPost.isMisinformation:
+                cumulativePostTypeCountPerCamp[posterCamp]["misinformation"] += 1
+            else:
+                cumulativePostTypeCountPerCamp[posterCamp]["regular"] += 1
+
             nthLayer = 0 # all posts here are original posts, thus layer is 0
             simulationAgentsList[currentPost.originalPoster].sharePost(currentPost, nthLayer)
             simulationAgentsList[currentPost.originalPoster].sharedPosts.add(currentPost.postID)
@@ -56,11 +100,101 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
         for agentID in range(Constants.N_AGENTS):
             currentAgent = simulationAgentsList[agentID]
             currentAgent.addNewPostsToFeedQueue()
-        
-        if (currentTime <= 50):
-            saveDir = os.path.join(Constants.GRAPHS_DIR, 'animation')
-            filename = str(currentTime).zfill(4)
-            stats.generateBeliefTypePieChart(saveDir=Constants.GIF_FRAMES_DIR, filename=filename, addLabels=False)
+
+        for agentID in range(Constants.N_AGENTS):
+            agent = simulationAgentsList[agentID]
+            startIdx = lastProcessedInteractionIndex[agentID]
+            newInteractions = agent.interactionsDone[startIdx:]
+
+            for interaction in newInteractions:
+                postID = interaction.post.postID
+                layer = interaction.layer
+                posterID = interaction.post.originalPoster
+                posterCamp = simulationAgentsList[posterID].classifyAgentBelief()
+                isMisinfo = interaction.post.isMisinformation
+
+                # Update cumulative layer count
+                if layer not in cumulativePostLayerCounts[postID]:
+                    cumulativePostLayerCounts[postID][layer] = 0
+                cumulativePostLayerCounts[postID][layer] += 1
+                #print(f'Post ID {postID}: {cumulativePostLayerCounts}\n')
+
+                cumulativePostTypeCountPerCamp[posterCamp]["interactions"] += 1
+
+            lastProcessedInteractionIndex[agentID] = len(agent.interactionsDone)
+
+        campDistribution = {
+            "red": {"gullible": 0, "normal": 0, "stubborn": 0},
+            "centrist": {"gullible": 0, "normal": 0, "stubborn": 0},
+            "blue": {"gullible": 0, "normal": 0, "stubborn": 0}
+        }
+
+        for agent in simulationAgentsList:
+            camp = agent.classifyAgentBelief()
+            agentType = agent.classifyAgentType()
+            campDistribution[camp][agentType] += 1
+
+
+        # print(cumulativePostLayerCounts)
+        postInformation = {}
+        for post in configData["Posts"]:
+            postID = post["postID"]
+
+            
+
+            # Sort layers ascending
+            layers = sorted(cumulativePostLayerCounts[postID].keys())
+            layerInfo = [cumulativePostLayerCounts[postID][layer] for layer in layers]
+
+            # if postID == 0:
+            #     print(layerInfo)
+            #print(layerInfo)
+
+            postInformation[f"post_{postID}"] = {
+                "layer_information": layerInfo
+            }
+
+        #print(postInformation)
+                        
+        snapshot = {
+            "camp_distribution": campDistribution,
+            "post_type_count_per_camp": copy.deepcopy(cumulativePostTypeCountPerCamp),
+            "post_information": postInformation
+        }
+
+        simulationData["dynamic_data"].append(snapshot)
+
+
+        # if (currentTime <= 50):
+        #     saveDir = os.path.join(Constants.GRAPHS_DIR, 'animation')
+        #     filename = str(currentTime).zfill(4)
+        #     stats.generateBeliefTypePieChart(saveDir=Constants.GIF_FRAMES_DIR, filename=filename, addLabels=False)
+
+    return simulationData
+
+def generateStaticData(configData):
+    return {
+        "post_count": len(configData["Posts"]),
+        "agent_count": Constants.N_AGENTS,
+        "agent_response_type": {
+            agentType: values["count"]
+            for agentType, values in Constants.AGENT_TYPE.items()
+        },
+        "minutes": Constants.MAXIMUM_TIME
+    }
+
+def generateStaticPostInformation(postsQueue):
+    staticPostInformation = {}
+    for post in postsQueue:
+        postID = post.postID
+
+        staticPostInformation[f'post_{postID}'] = {
+            "isMisinformation": post.isMisinformation,
+            "post_camp": post.classifyBeliefCamp()
+        }
+
+    return staticPostInformation
+
 
 
 def readPosts(agentsList):
@@ -77,10 +211,12 @@ def readPosts(agentsList):
                 originalPoster = random.randint(0, Constants.N_AGENTS-1),
                 beliefValue = post["beliefValue"],
                 interestValue = post["interestValue"],
-                postTopic = post["postTopic"]
+                postTopic = post["postTopic"],
+                isMisinformation = post["misinformation"]
             )
         )
     return postsQueue
+
 
 def runSimulation():
     agentsList = mapGraphToAgents()
@@ -88,23 +224,27 @@ def runSimulation():
 
     stats = Statistics.Statistics(agentsList)
     
-    stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
-    simulationProper(postsQueue, agentsList, stats)
-    stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)
+    #stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
+    simulationData = simulationProper(postsQueue, agentsList, stats)
+    #stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)
 
 
+    with open("output/simulation_output.json", "w") as f:
+        json.dump(simulationData, f, indent=4)
+    print("Simulation data saved in output/simulation_output.json")
 
-# if __name__ == "__main__":
-#     parameters = setupParameters()
 
-#     agentsList = mapGraphToAgents()
-#     stats = Statistics.Statistics(agentsList)
+if __name__ == "__main__":
+    parameters = setupParameters()
 
-#     if "custom_post" in parameters:
-#         postsQueue = getCustomPosts(agentsList, parameters["custom_post"])
-#     else:
-#         postsQueue = randomizePosts(agentsList)
+    agentsList = mapGraphToAgents()
+    stats = Statistics.Statistics(agentsList)
+
+    if "custom_post" in parameters:
+        postsQueue = getCustomPosts(agentsList, parameters["custom_post"])
+    else:
+        postsQueue = randomizePosts(agentsList)
     
-#     stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
-#     simulationProper(postsQueue, agentsList)
-#     stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)
+    stats.generateGraphs(saveDir=Constants.PRE_SIM_GRAPHS_DIR)
+    simulationProper(postsQueue, agentsList)
+    stats.generateGraphs(saveDir=Constants.POST_SIM_GRAPHS_DIR)
