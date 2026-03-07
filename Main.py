@@ -36,8 +36,6 @@ def randomizePosts(agentsList):
 
 
 def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats):
-    for post in postsQueue:
-        print(post.postID)
     simulationData = {
         "static_data": {},
         "static_post_information": {},
@@ -76,7 +74,7 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
             currentPost = postsQueue[0]
 
             posterID = currentPost.originalPoster
-            posterCamp = simulationAgentsList[posterID].classifyAgentBelief()
+            posterCamp = currentPost.classifyBeliefCamp()
 
             if currentPost.isMisinformation:
                 cumulativePostTypeCountPerCamp[posterCamp]["misinformation"] += 1
@@ -117,7 +115,6 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
                 if layer not in cumulativePostLayerCounts[postID]:
                     cumulativePostLayerCounts[postID][layer] = 0
                 cumulativePostLayerCounts[postID][layer] += 1
-                #print(f'Post ID {postID}: {cumulativePostLayerCounts}\n')
 
                 cumulativePostTypeCountPerCamp[posterCamp]["interactions"] += 1
 
@@ -134,27 +131,17 @@ def simulationProper(postsQueue, simulationAgentsList : list[Agent.Agent], stats
             agentType = agent.classifyAgentType()
             campDistribution[camp][agentType] += 1
 
-
-        # print(cumulativePostLayerCounts)
         postInformation = {}
         for post in configData["Posts"]:
             postID = post["postID"]
-
-            
 
             # Sort layers ascending
             layers = sorted(cumulativePostLayerCounts[postID].keys())
             layerInfo = [cumulativePostLayerCounts[postID][layer] for layer in layers]
 
-            # if postID == 0:
-            #     print(layerInfo)
-            #print(layerInfo)
-
             postInformation[f"post_{postID}"] = {
                 "layer_information": layerInfo
             }
-
-        #print(postInformation)
                         
         snapshot = {
             "camp_distribution": campDistribution,
@@ -196,25 +183,29 @@ def generateStaticPostInformation(postsQueue):
     return staticPostInformation
 
 
-
 def readPosts(agentsList):
     filename = os.path.join("input", "config.json")
     with open(filename, 'r') as f:
         data = json.load(f)
-    
-    postsQueue = deque([])
+
+    postsList = []
+
     for post in data["Posts"]:
-        postsQueue.append(
+        postsList.append(
             Post.generatePost(
-                postID = post["postID"],
-                postingTime= post["postingTime"],
-                originalPoster = random.randint(0, Constants.N_AGENTS-1),
-                beliefValue = post["beliefValue"],
-                interestValue = post["interestValue"],
-                postTopic = post["postTopic"],
-                isMisinformation = post["misinformation"]
+                postID=post["postID"],
+                postingTime=post["postingTime"],
+                originalPoster=random.randint(0, Constants.N_AGENTS-1),
+                beliefValue=post["beliefValue"],
+                interestValue=post["interestValue"],
+                postTopic=post["postTopic"],
+                isMisinformation=post["misinformation"]
             )
         )
+
+    postsList.sort(key=lambda post: post.postingTime)
+    postsQueue = deque(postsList)
+
     return postsQueue
 
 
