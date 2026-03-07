@@ -33,14 +33,16 @@
         "post_2" : [0, 1, 2, 3, 4, 5]
     },
 
-    "post_interaction_data" : { // shared + seen
-        "post_0" : [[0, 1, 2], [2, 1 0]], // divided per camp
+    "post_seen_data" : { // seen
+        "post_0" : [[0, 1, 2], [2, 1 0]], // divided per camp [red, centrist, blue]
         "post_1" : [[0, 1, 2], [2, 1 0]],
         "post_2" : [[0, 1, 2], [2, 1 0]],
     },
 
     "post_shared_data": { // shared only
-        
+        "post_0" : [[0, 1, 2], [2, 1 0]], // divided per camp [red, centrist, blue]
+        "post_1" : [[0, 1, 2], [2, 1 0]],
+        "post_2" : [[0, 1, 2], [2, 1 0]],
     },
     
     "dynamic_data" : [
