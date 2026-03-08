@@ -32,7 +32,7 @@ class AgentFrame(ctk.CTkFrame):
 
         self.create_section("Share Propensity Types")
         self.create_entry("Lurker Count")
-        self.create_entry("Normal Count")
+        self.create_entry("Normal Sharer Count")
         self.create_entry("Active Count")
 
         self.create_section("Belief Type")
@@ -86,7 +86,7 @@ class AgentFrame(ctk.CTkFrame):
             if not check_total(["Gullible Count", "Normal Count", "Stubborn Count"]):
                 raise ValueError("Type counts do not sum to Agent Count")
 
-            if not check_total(["Lurker Count", "Normal Count", "Active Count"]):
+            if not check_total(["Lurker Count", "Normal Sharer Count", "Active Count"]):
                 raise ValueError("Share Propensity counts do not sum to Agent Count")
 
             if not check_total(["Red Count", "Centrist Count", "Blue Count"]):
