@@ -9,8 +9,8 @@ import Statistics
 import copy
 from collections import deque
 
-def mapGraphToAgents():
-    agents = Agent.generateAgents()
+def mapGraphToAgents(agentsData):
+    agents = Agent.generateAgents(agentsData)
     DiGraph = GenerateGraph.generateSBMGraph()
     for u, v in DiGraph.edges():
         agents[u].addFollower(agents[v])
@@ -268,12 +268,16 @@ def readPosts(configData, agentsList):
 
 
 def runSimulation():
-    agentsList = mapGraphToAgents()
     with open(os.path.join("input", "config.json"), "r") as f:
         configData = json.load(f)
+    print(configData)
+    agentsList = mapGraphToAgents(configData["Agents"])
 
     simulationData = simulationProper(configData, agentsList)
 
     with open("output/simulation_output.json", "w") as f:
         json.dump(simulationData, f, indent=4)
     print("Simulation data saved in output/simulation_output.json")
+
+if __name__ == "__main__":
+    runSimulation()
