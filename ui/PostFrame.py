@@ -175,96 +175,99 @@ class PostFrame(ctk.CTkFrame):
 
 
     def add_post(self):
+        # Parse Inputs
         try:
+            post_topic = int(self.post_topic.get())
+            belief_value = int(self.belief_value.get())
             base_interest = int(self.interest_value.get())
-            is_misinfo = self.misinformation_var.get()
-
-            posts_added = 0
-
-            # Apply +3 interest for OG misinformation
-            interest_val = base_interest + 3 if is_misinfo else base_interest
-
-
-            # Create original post
-            post_id = len(self.posts)
-
-            original_post = {
-                "postID": post_id,
-                "postTopic": int(self.post_topic.get()),
-                "beliefValue": int(self.belief_value.get()),
-                "interestValue": interest_val,
-                "postingTime": int(self.posting_time.get()),
-                "misinformation": is_misinfo,
-                "spawn": is_misinfo  # Only OG misinfo can spawn
-            }
-
-            self.posts.append(original_post)
-            posts_added += 1
-
-
-            # Spawn 2 additional posts (ONLY if OG misinfo)
-            if original_post["misinformation"] and original_post["spawn"]:
-
-                previous_interest = interest_val
-                previous_time = original_post["postingTime"]
-
-                for _ in range(2):
-
-                    post_id = len(self.posts)
-
-                    # Progressive interest growth
-                    new_interest = previous_interest + 3
-
-                    # Sequential 5–12 hour delay
-                    delay = random.randint(300, 720)
-                    new_time = previous_time + delay
-
-                    spawned_post = {
-                        "postID": post_id,
-                        "postTopic": original_post["postTopic"],
-                        "beliefValue": original_post["beliefValue"],
-                        "interestValue": new_interest,
-                        "postingTime": new_time,
-                        "misinformation": True,
-                        "spawn": False  # Spawned posts cannot spawn again
-                    }
-
-                    self.posts.append(spawned_post)
-
-                    previous_interest = new_interest
-                    previous_time = new_time
-                    posts_added += 1
-
-
-            # Status Message
-            if posts_added == 3:
-                self.status.configure(
-                    text="3 posts have been added",
-                    text_color="green"
-                )
-            else:
-                self.status.configure(
-                    text="1 post has been added",
-                    text_color="green"
-                )
-
-
-            # Clear fields
-            for entry in [
-                self.post_topic,
-                self.belief_value,
-                self.interest_value,
-                self.posting_time
-            ]:
-                entry.delete(0, "end")
-
-            self.misinformation_var.set(False)
-
+            posting_time = int(self.posting_time.get())
         except ValueError:
             self.status.configure(
                 text="All manual fields must be integers",
                 text_color="red"
             )
+            return
+
+        is_misinfo = self.misinformation_var.get()
+        posts_added = 0
+
+        # Misinfo Time Constraint 
+        if is_misinfo and posting_time > 1440:
+            self.status.configure(
+                text="Misinformation posts must have posting time ≤ 1440.",
+                text_color="red"
+            )
+            return
+
+        # Interest Adjustment 
+        interest_val = base_interest + 3 if is_misinfo else base_interest
+
+        # Create Original Post 
+        original_post = {
+            "postID": len(self.posts),
+            "postTopic": post_topic,
+            "beliefValue": belief_value,
+            "interestValue": interest_val,
+            "postingTime": posting_time,
+            "misinformation": is_misinfo,
+            "spawn": is_misinfo
+        }
+
+        self.posts.append(original_post)
+        posts_added += 1
+
+        # Spawn Logic 
+        if is_misinfo:
+
+            previous_interest = interest_val
+            previous_time = posting_time
+
+            for _ in range(2):
+
+                delay = random.randint(300, 720)
+                new_time = previous_time + delay
+                new_interest = previous_interest + 3
+
+                spawned_post = {
+                    "postID": len(self.posts),
+                    "postTopic": post_topic,
+                    "beliefValue": belief_value,
+                    "interestValue": new_interest,
+                    "postingTime": new_time,
+                    "misinformation": True,
+                    "spawn": False
+                }
+
+                self.posts.append(spawned_post)
+
+                previous_interest = new_interest
+                previous_time = new_time
+                posts_added += 1
+
+        # Status Message 
+        if posts_added == 3:
+            self.status.configure(
+                text="3 posts have been added",
+                text_color="green"
+            )
+        else:
+            self.status.configure(
+                text="1 post has been added",
+                text_color="green"
+            )
+
+        # Clear Fields 
+        for entry in [
+            self.post_topic,
+            self.belief_value,
+            self.interest_value,
+            self.posting_time
+        ]:
+            entry.delete(0, "end")
+
+        self._original_interest_value = None
+        self.misinformation_var.set(False)
+        self.toggle_misinformation_bonus()
 
     def generate_random_posts(self):
         try:
@@ -274,6 +277,8 @@ class PostFrame(ctk.CTkFrame):
 
             posts_added = 0
 
+
+            
             for _ in range(count):
                 is_misinfo = random.choice([True, False])
 
@@ -282,12 +287,14 @@ class PostFrame(ctk.CTkFrame):
 
                 post_id = len(self.posts)
 
+                posting_time = (random.randint(0, 1440) if is_misinfo else random.randint(0, 2880))
+
                 original_post = {
                     "postID": post_id,
                     "postTopic": random.randint(1, 5),
                     "beliefValue": random.randint(-4, 4),
                     "interestValue": interest_val,
-                    "postingTime": random.randint(0, 2880),
+                    "postingTime": posting_time,
                     "misinformation": is_misinfo,
                     "spawn": is_misinfo
                 }
