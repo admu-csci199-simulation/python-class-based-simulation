@@ -36,7 +36,8 @@ def generateStaticPostInformation(postsQueue):
 
         staticPostInformation[f'post_{postID}'] = {
             "isMisinformation": post.isMisinformation,
-            "post_camp": post.classifyBeliefCamp()
+            "post_camp": post.classifyBeliefCamp(),
+            "original_post_time" : post.postingTime,
         }
 
     return staticPostInformation
