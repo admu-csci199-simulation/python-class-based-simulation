@@ -6,19 +6,19 @@ import Constants
 import random
 
 
-def generateAgents(seed=Constants.GRAPH_SEED):
-    agents = [Agent() for i in range(Constants.N_AGENTS)]
+def generateAgents(agentsData, seed=Constants.GRAPH_SEED):
+    agents = [Agent() for i in range(agentsData["Agent Count"])]
 
     # Set belief values
     # assumption: cluster sizes are equal
-    for agentIdx in range(Constants.N_AGENTS):
-        clusterIdx = agentIdx//(Constants.N_AGENTS//3)
+    for agentIdx in range(agentsData["Agent Count"]):
+        clusterIdx = agentIdx//(agentsData["Agent Count"]//3)
         minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[clusterIdx]
         assignedBeliefValue = random.randint(minBeliefValue, maxBeliefValue)
         agents[agentIdx].setBeliefValue(assignedBeliefValue)
     
     # Set steepness tolerance
-    idxRandom = [i for i in range(Constants.N_AGENTS)] # randomized agents index 
+    idxRandom = [i for i in range(agentsData["Agent Count"])] # randomized agents index 
     random.shuffle(idxRandom)
     idx = 0
     for agentType, values in Constants.AGENT_TYPE.items():
@@ -43,7 +43,7 @@ def generateAgents(seed=Constants.GRAPH_SEED):
     # Set active duration
     random.shuffle(idxRandom)
     idx = 0
-    for _ in range(Constants.N_AGENTS):
+    for _ in range(agentsData["Agent Count"]):
         minOnlineDuration, maxOnlineDuration = Constants.AGENT_DURATION["online"]
         minOfflineDuration, maxOfflineDuration = Constants.AGENT_DURATION["offline"]
         assignedOnlineDuration = random.randint(minOnlineDuration, maxOnlineDuration)
