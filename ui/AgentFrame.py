@@ -24,16 +24,21 @@ class AgentFrame(ctk.CTkFrame):
         ).pack(pady=(10, 20))
         
         self.entries = {}
-        self.create_entry("Agent Count")
-        self.create_section("Types")
+        self.create_entry("Agent Count", callback=self.update_share_propensity)
+        self.create_section("Response Types")
         self.create_entry("Gullible Count")
         self.create_entry("Normal Count")
         self.create_entry("Stubborn Count")
 
-        self.create_section("Share Propensity Types")
-        self.create_entry("Lurker Count")
-        self.create_entry("Normal Sharer Count")
-        self.create_entry("Active Count")
+        self.create_section("Share Propensity Types (Auto Computed)")
+
+        self.lurker_var = ctk.StringVar(value="0")
+        self.normal_var = ctk.StringVar(value="0")
+        self.active_var = ctk.StringVar(value="0")
+
+        self.create_display("Lurker Count (90%)", self.lurker_var)
+        self.create_display("Normal Sharer Count (9%)", self.normal_var)
+        self.create_display("Active Count (1%)", self.active_var)
 
         self.create_section("Belief Type")
         self.create_entry("Red Count")
@@ -65,30 +70,43 @@ class AgentFrame(ctk.CTkFrame):
             font=ctk.CTkFont(size=16, weight="bold")
         ).pack(anchor="w", padx=40, pady=(20, 5))
 
-    def create_entry(self, label):
+    def create_entry(self, label, callback=None):
         frame = ctk.CTkFrame(self, fg_color="transparent")
         frame.pack(fill="x", padx=40, pady=4)
 
-        ctk.CTkLabel(frame, text=label).pack(side="left", padx=10)
+        ctk.CTkLabel(frame, text=label).pack(side="left")
+
         entry = ctk.CTkEntry(frame, width=120)
         entry.pack(side="right")
 
         self.entries[label] = entry
 
+        if callback:
+            entry.bind("<KeyRelease>", lambda e: callback())
+
     def validate_and_continue(self):
         try:
             data = {k: int(v.get()) for k, v in self.entries.items()}
+
+            # Auto-computed share propensity
+            data["Lurker Count"] = int(self.lurker_var.get())
+            data["Normal Sharer Count"] = int(self.normal_var.get())
+            data["Active Count"] = int(self.active_var.get())
+
             agent_count = data["Agent Count"]
 
             def check_total(keys):
                 return sum(data[k] for k in keys) == agent_count
 
+            # Agent type distribution
             if not check_total(["Gullible Count", "Normal Count", "Stubborn Count"]):
                 raise ValueError("Type counts do not sum to Agent Count")
 
+            # Share propensity distribution
             if not check_total(["Lurker Count", "Normal Sharer Count", "Active Count"]):
                 raise ValueError("Share Propensity counts do not sum to Agent Count")
 
+            # Belief distribution
             if not check_total(["Red Count", "Centrist Count", "Blue Count"]):
                 raise ValueError("Belief counts do not sum to Agent Count")
 
@@ -142,6 +160,34 @@ class AgentFrame(ctk.CTkFrame):
                 text=f"Error loading JSON: {e}",
                 text_color="red"
             )
+
+    def create_display(self, label, variable):
+        frame = ctk.CTkFrame(self, fg_color="transparent")
+        frame.pack(fill="x", padx=40, pady=4)
+
+        ctk.CTkLabel(frame, text=label).pack(side="left")
+
+        entry = ctk.CTkEntry(frame, width=120, textvariable=variable)
+        entry.pack(side="right")
+
+        entry.configure(state="disabled")
+
+    def update_share_propensity(self):
+        try:
+            agent_count = int(self.entries["Agent Count"].get())
+
+            lurker = round(agent_count * 0.90)
+            normal = round(agent_count * 0.09)
+            active = agent_count - lurker - normal
+
+            self.lurker_var.set(str(lurker))
+            self.normal_var.set(str(normal))
+            self.active_var.set(str(active))
+
+        except ValueError:
+            self.lurker_var.set("0")
+            self.normal_var.set("0")
+            self.active_var.set("0")
 
     def go_back(self):
         self.app.show_start_screen()

@@ -1,0 +1,196 @@
+{
+    "Agents": {
+        "Agent Count": 100,
+        "Gullible Count": 33,
+        "Normal Count": 33,
+        "Stubborn Count": 34,
+        "Red Count": 33,
+        "Centrist Count": 33,
+        "Blue Count": 34,
+        "Lurker Count": 90,
+        "Normal Share Count": 9,
+        "Active Count": 1
+    },
+    "Posts": [
+        {
+            "postID": 0,
+            "postTopic": 1,
+            "beliefValue": 1,
+            "interestValue": 0,
+            "postingTime": 478,
+            "misinformation": true,
+            "spawn": true
+        },
+        {
+            "postID": 1,
+            "postTopic": 1,
+            "beliefValue": 1,
+            "interestValue": 3,
+            "postingTime": 953,
+            "misinformation": true,
+            "spawn": false
+        },
+        {
+            "postID": 2,
+            "postTopic": 1,
+            "beliefValue": 1,
+            "interestValue": 6,
+            "postingTime": 1541,
+            "misinformation": true,
+            "spawn": false
+        },
+        {
+            "postID": 3,
+            "postTopic": 2,
+            "beliefValue": -4,
+            "interestValue": 6,
+            "postingTime": 1116,
+            "misinformation": true,
+            "spawn": true
+        },
+        {
+            "postID": 4,
+            "postTopic": 2,
+            "beliefValue": -4,
+            "interestValue": 9,
+            "postingTime": 1573,
+            "misinformation": true,
+            "spawn": false
+        },
+        {
+            "postID": 5,
+            "postTopic": 2,
+            "beliefValue": -4,
+            "interestValue": 12,
+            "postingTime": 2089,
+            "misinformation": true,
+            "spawn": false
+        },
+        {
+            "postID": 6,
+            "postTopic": 4,
+            "beliefValue": 2,
+            "interestValue": 4,
+            "postingTime": 1473,
+            "misinformation": true,
+            "spawn": true
+        },
+        {
+            "postID": 7,
+            "postTopic": 4,
+            "beliefValue": 2,
+            "interestValue": 7,
+            "postingTime": 1966,
+            "misinformation": true,
+            "spawn": false
+        },
+        {
+            "postID": 8,
+            "postTopic": 4,
+            "beliefValue": 2,
+            "interestValue": 10,
+            "postingTime": 2363,
+            "misinformation": true,
+            "spawn": false
+        },
+        {
+            "postID": 9,
+            "postTopic": 3,
+            "beliefValue": 4,
+            "interestValue": -3,
+            "postingTime": 1644,
+            "misinformation": false,
+            "spawn": false
+        },
+        {
+            "postID": 10,
+            "postTopic": 2,
+            "beliefValue": 1,
+            "interestValue": 0,
+            "postingTime": 2860,
+            "misinformation": true,
+            "spawn": true
+        },
+        {
+            "postID": 11,
+            "postTopic": 2,
+            "beliefValue": 1,
+            "interestValue": 3,
+            "postingTime": 3404,
+            "misinformation": true,
+            "spawn": false
+        },
+        {
+            "postID": 12,
+            "postTopic": 2,
+            "beliefValue": 1,
+            "interestValue": 6,
+            "postingTime": 3729,
+            "misinformation": true,
+            "spawn": false
+        },
+        {
+            "postID": 13,
+            "postTopic": 5,
+            "beliefValue": 4,
+            "interestValue": 1,
+            "postingTime": 650,
+            "misinformation": false,
+            "spawn": false
+        },
+        {
+            "postID": 14,
+            "postTopic": 2,
+            "beliefValue": 1,
+            "interestValue": 4,
+            "postingTime": 522,
+            "misinformation": false,
+            "spawn": false
+        },
+        {
+            "postID": 15,
+            "postTopic": 1,
+            "beliefValue": -1,
+            "interestValue": 1,
+            "postingTime": 1124,
+            "misinformation": false,
+            "spawn": false
+        },
+        {
+            "postID": 16,
+            "postTopic": 2,
+            "beliefValue": 0,
+            "interestValue": 4,
+            "postingTime": 2175,
+            "misinformation": true,
+            "spawn": true
+        },
+        {
+            "postID": 17,
+            "postTopic": 2,
+            "beliefValue": 0,
+            "interestValue": 7,
+            "postingTime": 2526,
+            "misinformation": true,
+            "spawn": false
+        },
+        {
+            "postID": 18,
+            "postTopic": 2,
+            "beliefValue": 0,
+            "interestValue": 10,
+            "postingTime": 2967,
+            "misinformation": true,
+            "spawn": false
+        },
+        {
+            "postID": 19,
+            "postTopic": 5,
+            "beliefValue": 4,
+            "interestValue": 0,
+            "postingTime": 1981,
+            "misinformation": false,
+            "spawn": false
+        }
+    ]
+}
