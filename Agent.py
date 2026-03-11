@@ -10,25 +10,46 @@ def generateAgents(agentsData, seed=Constants.GRAPH_SEED):
     agents = [Agent() for i in range(agentsData["Agent Count"])]
 
     # Set belief values
-    # assumption: cluster sizes are equal
-    for agentIdx in range(agentsData["Agent Count"]):
-        clusterIdx = agentIdx//(agentsData["Agent Count"]//3)
-        minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[clusterIdx]
+    for agentIdx in range(agentsData["Red Count"]):
+        minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[0]
         assignedBeliefValue = random.randint(minBeliefValue, maxBeliefValue)
         agents[agentIdx].setBeliefValue(assignedBeliefValue)
+    for agentIdx in range(agentsData["Red Count"], agentsData["Red Count"] + agentsData["Centrist Count"]):
+        minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[1]
+        assignedBeliefValue = random.randint(minBeliefValue, maxBeliefValue)
+        agents[agentIdx].setBeliefValue(assignedBeliefValue)
+    for agentIdx in range(agentsData["Red Count"] + agentsData["Centrist Count"], agentsData["Red Count"] + agentsData["Centrist Count"] + agentsData["Blue Count"]):
+        minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[2]
+        assignedBeliefValue = random.randint(minBeliefValue, maxBeliefValue)
+        agents[agentIdx].setBeliefValue(assignedBeliefValue)
+    
+    assert(agentsData["Agent Count"] == agentsData["Red Count"] + agentsData["Centrist Count"] + agentsData["Blue Count"])
     
     # Set steepness tolerance
     idxRandom = [i for i in range(agentsData["Agent Count"])] # randomized agents index 
     random.shuffle(idxRandom)
     idx = 0
-    for agentType, values in Constants.AGENT_TYPE.items():
-        for _ in range(values["count"]):
-            minSteepness, maxSteepness = values["steepnessRange"]
-            minTolerance, maxTolerance = values["toleranceRange"]
-            assignedSteepness = random.randint(minSteepness, maxSteepness)
-            assignedTolerance = random.randint(minTolerance, maxTolerance)
-            agents[idxRandom[idx]].setSteepnessTolerance(assignedSteepness, assignedTolerance)
-            idx += 1
+    for _ in range(agentsData["Gullible Count"]):
+        minSteepness, maxSteepness = Constants.AGENT_TYPE["gullible"]["steepnessRange"]
+        minTolerance, maxTolerance = Constants.AGENT_TYPE["gullible"]["toleranceRange"]
+        assignedSteepness = random.randint(minSteepness, maxSteepness)
+        assignedTolerance = random.randint(minTolerance, maxTolerance)
+        agents[idxRandom[idx]].setSteepnessTolerance(assignedSteepness, assignedTolerance)
+        idx += 1
+    for _ in range(agentsData["Normal Count"]):
+        minSteepness, maxSteepness = Constants.AGENT_TYPE["normal"]["steepnessRange"]
+        minTolerance, maxTolerance = Constants.AGENT_TYPE["normal"]["toleranceRange"]
+        assignedSteepness = random.randint(minSteepness, maxSteepness)
+        assignedTolerance = random.randint(minTolerance, maxTolerance)
+        agents[idxRandom[idx]].setSteepnessTolerance(assignedSteepness, assignedTolerance)
+        idx += 1
+    for _ in range(agentsData["Stubborn Count"]):
+        minSteepness, maxSteepness = Constants.AGENT_TYPE["stubborn"]["steepnessRange"]
+        minTolerance, maxTolerance = Constants.AGENT_TYPE["stubborn"]["toleranceRange"]
+        assignedSteepness = random.randint(minSteepness, maxSteepness)
+        assignedTolerance = random.randint(minTolerance, maxTolerance)
+        agents[idxRandom[idx]].setSteepnessTolerance(assignedSteepness, assignedTolerance)
+        idx += 1
 
     # Set share propensity
     random.shuffle(idxRandom)
