@@ -37,7 +37,7 @@ class AgentFrame(ctk.CTkFrame):
         self.active_var = ctk.StringVar(value="0")
 
         self.create_display("Lurker Count (90%)", self.lurker_var)
-        self.create_display("Normal Count (9%)", self.normal_var)
+        self.create_display("Normal Sharer Count (9%)", self.normal_var)
         self.create_display("Active Count (1%)", self.active_var)
 
         self.create_section("Belief Type")
