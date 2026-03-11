@@ -90,7 +90,7 @@ class AgentFrame(ctk.CTkFrame):
 
             # Auto-computed share propensity
             data["Lurker Count"] = int(self.lurker_var.get())
-            data["Normal Share Count"] = int(self.normal_var.get())
+            data["Normal Sharer Count"] = int(self.normal_var.get())
             data["Active Count"] = int(self.active_var.get())
 
             agent_count = data["Agent Count"]
@@ -103,7 +103,7 @@ class AgentFrame(ctk.CTkFrame):
                 raise ValueError("Type counts do not sum to Agent Count")
 
             # Share propensity distribution
-            if not check_total(["Lurker Count", "Normal Share Count", "Active Count"]):
+            if not check_total(["Lurker Count", "Normal Sharer Count", "Active Count"]):
                 raise ValueError("Share Propensity counts do not sum to Agent Count")
 
             # Belief distribution
