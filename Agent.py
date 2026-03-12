@@ -7,7 +7,7 @@ import random
 
 
 def generateAgents(agentsData, seed=Constants.GRAPH_SEED):
-    agents = [Agent() for i in range(agentsData["Agent Count"])]
+    agents = [Agent(i) for i in range(agentsData["Agent Count"])]
 
     # Set belief values
     for agentIdx in range(agentsData["Red Count"]):
@@ -89,7 +89,8 @@ def generateAgents(agentsData, seed=Constants.GRAPH_SEED):
     return agents
 
 class Agent:
-    def __init__(self):
+    def __init__(self, id):
+        self.id = id
         self.beliefValue = 0
 
         self.steepness = 0
@@ -177,20 +178,27 @@ class Agent:
                 
         self.feedBuffer.clear() 
 
-    def sharePost(self, post, layer) -> None:
+    def sharePost(self, post, layer, time, networkData) -> None:
         "Share post to all neighbors of the agent."
         for agent in self.followers:
             if not agent.hasPostBeenShared(post):
                 agent.addPostToFeedBuffer(post, layer+1)
+                if str(time) not in networkData["share_events"]:
+                    networkData["share_events"][str(time)] = []
+                networkData["share_events"][str(time)].append({
+                    "source" : self.id,
+                    "target" : agent.id,
+                    "post_type" : ("misinformation" if post.isMisinformation else "regular")
+                })
     
-    def processFeed(self, time: int) -> None:
+    def processFeed(self, networkData, time: int) -> None:
         "Process all queued posts in feedQueue."
         for post, layer in self.feedQueue:
             if Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
                 self.adjustBeliefValue(post)
             dccProbability = self.getDCCProbability(post, time)
             if BernoulliTrial(dccProbability):
-                self.acceptPost(time, post, layer)
+                self.acceptPost(time, networkData, post, layer)
             else:
                 # generate PostInteraction with isShared==False
                 self.interactionsDone.append(PostInteraction(      
@@ -206,12 +214,12 @@ class Agent:
 
         self.feedQueue.clear()
 
-    def acceptPost(self, time: int, post: "Post", layer: int) -> None:
+    def acceptPost(self, networkData, time: int, post: "Post", layer: int) -> None:
         "Does all needed processes once an agent accepts the contents of a post"
         if post.postID in self.sharedPosts:
             return
         
-        self.sharePost(post, layer)
+        self.sharePost(post, layer, time, networkData,)
         # To do: all post interactions done by an agent will be stored in
         # a struct inherent to that agent, we can then just collect this later
         # on in order to do statistics

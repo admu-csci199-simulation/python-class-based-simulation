@@ -9,13 +9,21 @@ import Statistics
 import copy
 from collections import deque
 
-def mapGraphToAgents(agentsData):
+def mapGraphToAgents(agentsData, networkData):
     agents = Agent.generateAgents(agentsData)
+    for agentIdx in range(agentsData["Agent Count"]):
+        networkData["agents"].append(
+            {
+                "response_type" : agents[agentIdx].classifyAgentType()
+            }
+        )
+
     DiGraph = GenerateGraph.generateSBMGraph(
             sizes = [agentsData["Red Count"], agentsData["Centrist Count"], agentsData["Blue Count"]]
         )
     for u, v in DiGraph.edges():
         agents[u].addFollower(agents[v])
+        networkData["network_edges"].append([u, v])
     return agents
 
 
@@ -63,7 +71,7 @@ def randomizePosts(agentsList):
     return postsQueue
 
 
-def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
+def simulationProper(configData, networkData, simulationAgentsList : list[Agent.Agent]):
     postsQueue = readPosts(configData, simulationAgentsList)
 
     simulationData = {
@@ -136,7 +144,7 @@ def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
                 cumulativePostTypeCountPerCamp[posterCamp]["regular"] += 1
 
             nthLayer = 0 # all posts here are original posts, thus layer is 0
-            simulationAgentsList[currentPost.originalPoster].sharePost(currentPost, nthLayer)
+            simulationAgentsList[currentPost.originalPoster].sharePost(currentPost, nthLayer, currentTime, networkData)
             simulationAgentsList[currentPost.originalPoster].sharedPosts.add(currentPost.postID)
             postsQueue.popleft()
             #continue
@@ -146,7 +154,7 @@ def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
             currentAgent = simulationAgentsList[agentID]
             
             if (currentAgent.isOnline(currentTime)):
-                currentAgent.processFeed(currentTime)
+                currentAgent.processFeed(networkData, currentTime)
         
         # transfer all new posts from feedBuffer to feedQueue for all agents 
         for agentID in range(configData["Agents"]["Agent Count"]):
@@ -241,6 +249,14 @@ def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
         simulationData["post_seen_data"] = postSeenData
         simulationData["post_shared_data"] = postSharedData
 
+        # for networkData agent_states
+        for agentID in range(configData["Agents"]["Agent Count"]):
+            agent = simulationAgentsList[agentID]
+            if str(agentID) not in networkData["agent_states"]:
+                networkData["agent_states"][str(agentID)] = []
+
+            networkData["agent_states"][str(agentID)].append(agent.classifyAgentBelief())
+
         # if (currentTime <= 50):
         #     saveDir = os.path.join(Constants.GRAPHS_DIR, 'animation')
         #     filename = str(currentTime).zfill(4)
@@ -270,18 +286,29 @@ def readPosts(configData, agentsList):
 
     return postsQueue
 
-
 def runSimulation():
     with open(os.path.join("input", "config.json"), "r") as f:
         configData = json.load(f)
+    
+    # data for network visualziation
+    networkData = {
+        "agents" : [],
+        "network_edges" : [],
+        "agent_states" : {},
+        "share_events" : {}
+    }
 
-    agentsList = mapGraphToAgents(configData["Agents"])
+    agentsList = mapGraphToAgents(configData["Agents"], networkData)
 
-    simulationData = simulationProper(configData, agentsList)
+    simulationData = simulationProper(configData, networkData, agentsList)
 
     with open("output/simulation_output.json", "w") as f:
         json.dump(simulationData, f, indent=4)
     print("Simulation data saved in output/simulation_output.json")
+
+    with open("output/network_output.json", "w") as f:
+        json.dump(networkData, f, indent=4)
+    print("Network data saved in output/network_output.json")
 
 if __name__ == "__main__":
     runSimulation()
