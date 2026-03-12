@@ -1,15 +1,15 @@
 {
     "Agents": {
-        "Agent Count": 9,
-        "Gullible Count": 3,
-        "Normal Count": 3,
-        "Stubborn Count": 3,
-        "Lurker Count": 3,
-        "Normal Sharer Count": 3,
-        "Active Count": 3,
-        "Red Count": 3,
-        "Centrist Count": 3,
-        "Blue Count": 3
+        "Agent Count": 60,
+        "Gullible Count": 20,
+        "Normal Count": 20,
+        "Stubborn Count": 20,
+        "Lurker Count": 54,
+        "Normal Sharer Count": 5,
+        "Active Count": 1,
+        "Red Count": 20,
+        "Centrist Count": 20,
+        "Blue Count": 20
     },
     "Posts": [
         {
