@@ -9,9 +9,11 @@ import Statistics
 import copy
 from collections import deque
 
-def mapGraphToAgents():
-    agents = Agent.generateAgents()
-    DiGraph = GenerateGraph.generateSBMGraph()
+def mapGraphToAgents(agentsData):
+    agents = Agent.generateAgents(agentsData)
+    DiGraph = GenerateGraph.generateSBMGraph(
+            sizes = [agentsData["Red Count"], agentsData["Centrist Count"], agentsData["Blue Count"]]
+        )
     for u, v in DiGraph.edges():
         agents[u].addFollower(agents[v])
     return agents
@@ -20,10 +22,10 @@ def mapGraphToAgents():
 def generateStaticData(configData):
     return {
         "post_count": len(configData["Posts"]),
-        "agent_count": Constants.N_AGENTS,
+        "agent_count": configData["Agents"]["Agent Count"],
         "agent_response_type": {
-            agentType: values["count"]
-            for agentType, values in Constants.AGENT_TYPE.items()
+            agentType: count
+            for agentType, count in [("gullible", configData["Agents"]["Gullible Count"]), ("normal", configData["Agents"]["Normal Count"]), ("stubborn", configData["Agents"]["Stubborn Count"])]
         },
         "minutes": Constants.MAXIMUM_TIME
     }
@@ -42,7 +44,7 @@ def generateStaticPostInformation(postsQueue):
 
     return staticPostInformation
 
-
+# this function is obsolete. If going to use, code according to configdata
 def randomizePosts(agentsList):
     postsList = []
 
@@ -90,7 +92,7 @@ def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
     # Track last processed interaction index per agent
     lastProcessedInteractionIndex = {
         agentID: 0
-        for agentID in range(Constants.N_AGENTS)
+        for agentID in range(configData["Agents"]["Agent Count"])
     }
 
     # Dictionary for post_seen_data and post_shared_data
@@ -140,14 +142,14 @@ def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
             #continue
 
         # all agents process what is in their feed at time currentTime
-        for agentID in range(Constants.N_AGENTS):
+        for agentID in range(configData["Agents"]["Agent Count"]):
             currentAgent = simulationAgentsList[agentID]
             
             if (currentAgent.isOnline(currentTime)):
                 currentAgent.processFeed(currentTime)
         
         # transfer all new posts from feedBuffer to feedQueue for all agents 
-        for agentID in range(Constants.N_AGENTS):
+        for agentID in range(configData["Agents"]["Agent Count"]):
             currentAgent = simulationAgentsList[agentID]
 
             # Update post_seen_data
@@ -160,7 +162,7 @@ def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
 
             currentAgent.addNewPostsToFeedQueue()
 
-        for agentID in range(Constants.N_AGENTS):
+        for agentID in range(configData["Agents"]["Agent Count"]):
             agent = simulationAgentsList[agentID]
             startIdx = lastProcessedInteractionIndex[agentID]
             newInteractions = agent.interactionsDone[startIdx:]
@@ -254,7 +256,7 @@ def readPosts(configData, agentsList):
             Post.generatePost(
                 postID=post["postID"],
                 postingTime=post["postingTime"],
-                originalPoster=random.randint(0, Constants.N_AGENTS-1),
+                originalPoster=random.randint(0, configData["Agents"]["Agent Count"]-1),
                 beliefValue=post["beliefValue"],
                 interestValue=post["interestValue"],
                 postTopic=post["postTopic"],
@@ -269,12 +271,16 @@ def readPosts(configData, agentsList):
 
 
 def runSimulation():
-    agentsList = mapGraphToAgents()
     with open(os.path.join("input", "config.json"), "r") as f:
         configData = json.load(f)
+
+    agentsList = mapGraphToAgents(configData["Agents"])
 
     simulationData = simulationProper(configData, agentsList)
 
     with open("output/simulation_output.json", "w") as f:
         json.dump(simulationData, f, indent=4)
     print("Simulation data saved in output/simulation_output.json")
+
+if __name__ == "__main__":
+    runSimulation()
