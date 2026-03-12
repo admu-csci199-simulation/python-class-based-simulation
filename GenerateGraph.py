@@ -71,7 +71,7 @@ def generateHKGraph(n=Constants.N_AGENTS, m=Constants.HK_NEW_EDGES, p=Constants.
     return D
 
 # --- 3. Directed Stochastic Block Model ---
-def generateSBMGraph( sizes=Constants.SBM_SIZES, probs=Constants.SBM_PROB_MATRIX, seed=Constants.GRAPH_SEED, plot=False):
+def generateSBMGraph(sizes=Constants.SBM_SIZES, probs=Constants.SBM_PROB_MATRIX, seed=Constants.GRAPH_SEED, plot=False):
     """
     sizes = nodes per group [[s1], [s2], ...]
     probs = edge probability matrix
