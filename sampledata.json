@@ -26,12 +26,6 @@
             "post_camp" : "Centrist"
         }
     },
-    
-    "post_interaction_data" : { // shared + seen
-        "post_0" : [0, 1, 2, 3, 4, 5], // append 0s if no interactions, size should be 2880
-        "post_1" : [0, 1, 2, 3, 4, 5],
-        "post_2" : [0, 1, 2, 3, 4, 5]
-    },
 
     "post_seen_data" : { // seen
         "post_0" : [[0, 1, 2], [2, 1 0]], // divided per camp [red, centrist, blue]
