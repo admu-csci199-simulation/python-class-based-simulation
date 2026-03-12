@@ -179,6 +179,7 @@ def simulationProper(configData, networkData, simulationAgentsList : list[Agent.
                 postID = interaction.post.postID
                 layer = interaction.layer
                 posterID = interaction.post.originalPoster
+                postCamp = interaction.post.classifyBeliefCamp()
                 posterCamp = simulationAgentsList[posterID].classifyAgentBelief()
                 isMisinfo = interaction.post.isMisinformation
 
@@ -196,7 +197,7 @@ def simulationProper(configData, networkData, simulationAgentsList : list[Agent.
 
                     postSharedCounters[postID][idx] += 1
 
-                cumulativePostTypeCountPerCamp[posterCamp]["interactions"] += 1
+                cumulativePostTypeCountPerCamp[postCamp]["interactions"] += 1
 
             lastProcessedInteractionIndex[agentID] = len(agent.interactionsDone)
 
