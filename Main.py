@@ -11,7 +11,9 @@ from collections import deque
 
 def mapGraphToAgents(agentsData):
     agents = Agent.generateAgents(agentsData)
-    DiGraph = GenerateGraph.generateSBMGraph()
+    DiGraph = GenerateGraph.generateSBMGraph(
+            sizes = [agentsData["Red Count"], agentsData["Centrist Count"], agentsData["Blue Count"]]
+        )
     for u, v in DiGraph.edges():
         agents[u].addFollower(agents[v])
     return agents
