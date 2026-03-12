@@ -22,10 +22,10 @@ def mapGraphToAgents(agentsData):
 def generateStaticData(configData):
     return {
         "post_count": len(configData["Posts"]),
-        "agent_count": Constants.N_AGENTS,
+        "agent_count": configData["Agents"]["Agent Count"],
         "agent_response_type": {
-            agentType: values["count"]
-            for agentType, values in Constants.AGENT_TYPE.items()
+            agentType: count
+            for agentType, count in [("gullible", configData["Gullible Count"]), ("normal", "Normal Count"), ("stubborn", "Stubborn Count")]
         },
         "minutes": Constants.MAXIMUM_TIME
     }
@@ -272,7 +272,7 @@ def readPosts(configData, agentsList):
 def runSimulation():
     with open(os.path.join("input", "config.json"), "r") as f:
         configData = json.load(f)
-    print(configData)
+
     agentsList = mapGraphToAgents(configData["Agents"])
 
     simulationData = simulationProper(configData, agentsList)
