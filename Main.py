@@ -25,7 +25,7 @@ def generateStaticData(configData):
         "agent_count": configData["Agents"]["Agent Count"],
         "agent_response_type": {
             agentType: count
-            for agentType, count in [("gullible", configData["Gullible Count"]), ("normal", "Normal Count"), ("stubborn", "Stubborn Count")]
+            for agentType, count in [("gullible", configData["Agents"]["Gullible Count"]), ("normal", configData["Agents"]["Normal Count"]), ("stubborn", configData["Agents"]["Stubborn Count"])]
         },
         "minutes": Constants.MAXIMUM_TIME
     }
@@ -43,7 +43,7 @@ def generateStaticPostInformation(postsQueue):
 
     return staticPostInformation
 
-
+# this function is obsolete. If going to use, code according to configdata
 def randomizePosts(agentsList):
     postsList = []
 
@@ -91,7 +91,7 @@ def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
     # Track last processed interaction index per agent
     lastProcessedInteractionIndex = {
         agentID: 0
-        for agentID in range(Constants.N_AGENTS)
+        for agentID in range(configData["Agents"]["Agent Count"])
     }
 
     # Dictionary for post_seen_data and post_shared_data
@@ -141,14 +141,14 @@ def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
             #continue
 
         # all agents process what is in their feed at time currentTime
-        for agentID in range(Constants.N_AGENTS):
+        for agentID in range(configData["Agents"]["Agent Count"]):
             currentAgent = simulationAgentsList[agentID]
             
             if (currentAgent.isOnline(currentTime)):
                 currentAgent.processFeed(currentTime)
         
         # transfer all new posts from feedBuffer to feedQueue for all agents 
-        for agentID in range(Constants.N_AGENTS):
+        for agentID in range(configData["Agents"]["Agent Count"]):
             currentAgent = simulationAgentsList[agentID]
 
             # Update post_seen_data
@@ -161,7 +161,7 @@ def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
 
             currentAgent.addNewPostsToFeedQueue()
 
-        for agentID in range(Constants.N_AGENTS):
+        for agentID in range(configData["Agents"]["Agent Count"]):
             agent = simulationAgentsList[agentID]
             startIdx = lastProcessedInteractionIndex[agentID]
             newInteractions = agent.interactionsDone[startIdx:]
@@ -255,7 +255,7 @@ def readPosts(configData, agentsList):
             Post.generatePost(
                 postID=post["postID"],
                 postingTime=post["postingTime"],
-                originalPoster=random.randint(0, Constants.N_AGENTS-1),
+                originalPoster=random.randint(0, configData["Agents"]["Agent Count"]-1),
                 beliefValue=post["beliefValue"],
                 interestValue=post["interestValue"],
                 postTopic=post["postTopic"],
