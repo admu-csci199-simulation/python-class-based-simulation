@@ -54,12 +54,24 @@ def generateAgents(agentsData, seed=Constants.GRAPH_SEED):
     # Set share propensity
     random.shuffle(idxRandom)
     idx = 0
-    for userType, values in Constants.AGENT_SHARE_PROPENSITY.items():
-        for _ in range(values["count"]):
-            minPropensity, maxPropensity = values["propensityRange"]
-            assignedPropensity = random.randint(minPropensity, maxPropensity)
-            agents[idxRandom[idx]].setSharePropensity(assignedPropensity)
-            idx += 1
+    
+    for _ in range(agentsData["Lurker Count"]):
+        minPropensity, maxPropensity = Constants.AGENT_SHARE_PROPENSITY["lurker"]["propensityRange"]
+        assignedPropensity = random.randint(minPropensity, maxPropensity)
+        agents[idxRandom[idx]].setSharePropensity(assignedPropensity)
+        idx += 1
+    
+    for _ in range(agentsData["Normal SP Count"]):
+        minPropensity, maxPropensity = Constants.AGENT_SHARE_PROPENSITY["normal"]["propensityRange"]
+        assignedPropensity = random.randint(minPropensity, maxPropensity)
+        agents[idxRandom[idx]].setSharePropensity(assignedPropensity)
+        idx += 1
+    
+    for _ in range(agentsData["Active Count"]):
+        minPropensity, maxPropensity = Constants.AGENT_SHARE_PROPENSITY["active"]["propensityRange"]
+        assignedPropensity = random.randint(minPropensity, maxPropensity)
+        agents[idxRandom[idx]].setSharePropensity(assignedPropensity)
+        idx += 1
 
     # Set active duration
     random.shuffle(idxRandom)
