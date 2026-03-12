@@ -175,9 +175,10 @@ def simulationProper(configData, simulationAgentsList : list[Agent.Agent]):
                 isMisinfo = interaction.post.isMisinformation
 
                 # Update layer_information count
-                if layer not in cumulativePostLayerCounts[postID]:
-                    cumulativePostLayerCounts[postID][layer] = 0
-                cumulativePostLayerCounts[postID][layer] += 1
+                if interaction.isShared:
+                    if layer not in cumulativePostLayerCounts[postID]:
+                        cumulativePostLayerCounts[postID][layer] = 0
+                    cumulativePostLayerCounts[postID][layer] += 1
 
                 # Updated post_shared_data
                 if interaction.isShared:
