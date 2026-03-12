@@ -61,7 +61,7 @@ def generateAgents(agentsData, seed=Constants.GRAPH_SEED):
         agents[idxRandom[idx]].setSharePropensity(assignedPropensity)
         idx += 1
     
-    for _ in range(agentsData["Normal Sharer Count"]):
+    for _ in range(agentsData["Normal Share Count"]):
         minPropensity, maxPropensity = Constants.AGENT_SHARE_PROPENSITY["normal"]["propensityRange"]
         assignedPropensity = random.randint(minPropensity, maxPropensity)
         agents[idxRandom[idx]].setSharePropensity(assignedPropensity)
