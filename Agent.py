@@ -198,7 +198,7 @@ class Agent:
                 self.adjustBeliefValue(post)
             dccProbability = self.getDCCProbability(post, time)
             if BernoulliTrial(dccProbability):
-                self.acceptPost(time, networkData, post, layer)
+                self.acceptPost(networkData, time, post, layer)
             else:
                 # generate PostInteraction with isShared==False
                 self.interactionsDone.append(PostInteraction(      
@@ -219,7 +219,7 @@ class Agent:
         if post.postID in self.sharedPosts:
             return
         
-        self.sharePost(post, layer, time, networkData,)
+        self.sharePost(post, layer, time, networkData)
         # To do: all post interactions done by an agent will be stored in
         # a struct inherent to that agent, we can then just collect this later
         # on in order to do statistics
