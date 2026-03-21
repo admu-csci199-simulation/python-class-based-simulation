@@ -5,6 +5,15 @@ from PostInteraction import PostInteraction
 import Constants
 import random
 
+def generateNewsAgencies(size):
+    agencies = [Agent(id=i, isNewsAgency=True) for i in range(size)]
+    
+    # news agencies are active 24/7
+    for ai in range(size):
+        agencies[ai].setActiveDuration(Constants.MAXIMUM_TIME, 0, "Online", 0)
+    
+    return agencies
+
 
 def generateAgents(agentsData, seed=Constants.GRAPH_SEED):
     agents = [Agent(i) for i in range(agentsData["Agent Count"])]
@@ -89,7 +98,7 @@ def generateAgents(agentsData, seed=Constants.GRAPH_SEED):
     return agents
 
 class Agent:
-    def __init__(self, id):
+    def __init__(self, id, isNewsAgency=False):
         self.id = id
         self.beliefValue = 0
 
@@ -108,6 +117,8 @@ class Agent:
         self.feedBuffer = set()
         self.interactionsDone = []
         self.sharedPosts = set()
+
+        self.isNewsAgency = isNewsAgency
 
     def setBeliefValue(self, beliefValue) -> None:
         """value: -4 to 4 (int). if SBM, this is based on cluster"""
@@ -144,6 +155,10 @@ class Agent:
         self.offlineStartOffset = offlineStartOffset
 
     def getCognitiveResponse(self, post: Post) -> float:
+        if self.isNewsAgency:
+            raise RuntimeError("Agent is a news agency, cannot get cognitive response.")
+
+
         postBeliefValue = post.getBeliefValue()
         postInterestValue = post.getInterestValue()
         agentSteepness = self.steepness
@@ -154,6 +169,10 @@ class Agent:
 
     def getDCCProbability(self, post: Post, time: int) -> float:
         "Get the Defensive Cognitive Cascade Probability given a Post."
+
+        if self.isNewsAgency:
+            raise RuntimeError("Agent is a news agency, cannot get DCC Probability.")
+
         postBeliefValue = post.getBeliefValue()
         postInterestValue = post.getInterestValue()
         agentSteepness = self.steepness
@@ -166,6 +185,10 @@ class Agent:
     
     def addPostToFeedBuffer(self, post, layer) -> None:
         "Appends post to agent's feed buffer."
+
+        if self.isNewsAgency:
+            raise RuntimeError("Agent is a news agency, cannot take in shared posts.")
+
         self.feedBuffer.add((post, layer))
             
     def addNewPostsToFeedQueue(self) -> None:
@@ -193,6 +216,10 @@ class Agent:
     
     def processFeed(self, networkData, time: int) -> None:
         "Process all queued posts in feedQueue."
+
+        if self.isNewsAgency:
+            raise RuntimeError("Agent is a news agency, cannot take in shared posts.")
+
         for post, layer in self.feedQueue:
             if Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
                 self.adjustBeliefValue(post)
@@ -216,9 +243,13 @@ class Agent:
 
     def acceptPost(self, networkData, time: int, post: "Post", layer: int) -> None:
         "Does all needed processes once an agent accepts the contents of a post"
+        
         if post.postID in self.sharedPosts:
             return
         
+        if self.isNewsAgency:
+            raise RuntimeError("Agent is a news agency, cannot take in shared posts.")
+
         self.sharePost(post, layer, time, networkData)
         # To do: all post interactions done by an agent will be stored in
         # a struct inherent to that agent, we can then just collect this later
@@ -258,13 +289,16 @@ class Agent:
         
         raise RuntimeError("Agent is neither online or offline")
 
-    def addFollower(self, otherIdx: int) -> None:
+    def addFollower(self, otherIdx: Agent) -> None:
         "Appends agent to followers."
         self.followers.append(otherIdx)
 
     def adjustBeliefValue(self, post: Post) -> None:
         "Adjusts the agent belief value"
 
+        if self.isNewsAgency:
+            raise RuntimeError("Agent is a news agency, no belief value.")
+        
         cognitiveResponse = self.getCognitiveResponse(post)
         oldBeliefValue = self.beliefValue
         newBeliefValue = -1
@@ -296,6 +330,10 @@ class Agent:
         Returns 'gullible', 'stubborn', 'normal' based on 
         steepness and tolerance.
         """
+
+        if self.isNewsAgency:
+            raise RuntimeError("Agent is a news agency, no agent type.")
+
         for typeName, ranges in Constants.AGENT_TYPE.items():
             steepnessMin, steepnessMax = ranges["steepnessRange"]
             toleranceMin, toleranceMax = ranges["toleranceRange"]
@@ -311,6 +349,10 @@ class Agent:
         """
         Returns 'red', 'centrist', or 'blue'
         """
+
+        if self.isNewsAgency:
+            raise RuntimeError("Agent is a news agency, no agent belief.")
+
         for beliefName, values in Constants.AGENT_BELIEF_TYPE.items():
             if self.beliefValue in values:
                 return beliefName
