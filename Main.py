@@ -8,6 +8,20 @@ import Post
 import Statistics
 import copy
 from collections import deque
+from math import ceil
+
+def mapGraphToNewsAgencies(agentsList, connectionsCount):
+    numAgencies = ceil(len(agentsList)/100)
+    newsAgencies = Agent.generateNewsAgencies(numAgencies)
+
+    if connectionsCount > len(agentsList):
+        raise RuntimeError("News Agencies connection count is greater than the number of agents.")
+    
+    for agencyIdx in range(numAgencies):
+        for agentIdx in random.sample(range(len(agentsList)), connectionsCount):
+            newsAgencies[agencyIdx].addFollower(newsAgencies[agentIdx])
+
+    return newsAgencies
 
 def mapGraphToAgents(agentsData, networkData):
     agents = Agent.generateAgents(agentsData)
@@ -300,6 +314,7 @@ def runSimulation():
     }
 
     agentsList = mapGraphToAgents(configData["Agents"], networkData)
+    agenciesList = mapGraphToNewsAgencies(agentsList, int(len(agentsList) * Constants.NEWS_AGENCY_PERCENTAGE))
 
     simulationData = simulationProper(configData, networkData, agentsList)
 
