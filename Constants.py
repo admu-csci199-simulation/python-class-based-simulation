@@ -93,3 +93,6 @@ POST_SIM_GRAPHS_DIR = os.path.join(GRAPHS_DIR, "post_sim")
 GIF_FRAMES_DIR = f"{GRAPHS_DIR}/frames"
 GIF_OUT_PATH = f"{GRAPHS_DIR}/belief_type_pie_chart.gif" 
 GIF_DURATION = 2
+
+# NEWS AGENCIES
+NEWS_AGENCY_PERCENTAGE = 0.75 # percentage over agents count
