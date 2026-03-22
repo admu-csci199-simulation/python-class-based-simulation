@@ -19,7 +19,7 @@ def mapGraphToNewsAgencies(agentsList, connectionsCount):
     
     for agencyIdx in range(numAgencies):
         for agentIdx in random.sample(range(len(agentsList)), connectionsCount):
-            newsAgencies[agencyIdx].addFollower(newsAgencies[agentIdx])
+            newsAgencies[agencyIdx].addFollower(agentsList[agentIdx])
 
     return newsAgencies
 
@@ -85,8 +85,8 @@ def randomizePosts(agentsList):
     return postsQueue
 
 
-def simulationProper(configData, networkData, simulationAgentsList : list[Agent.Agent]):
-    postsQueue = readPosts(configData, simulationAgentsList)
+def simulationProper(configData, networkData, simulationAgentsList : list[Agent.Agent], agenciesList : list[Agent.Agent]):
+    postsQueue = readPosts(configData, simulationAgentsList, agenciesList)
 
     simulationData = {
         "static_data": {},
@@ -155,13 +155,18 @@ def simulationProper(configData, networkData, simulationAgentsList : list[Agent.
             if currentPost.isMisinformation:
                 cumulativePostTypeCountPerCamp[posterCamp]["misinformation"] += 1
             else:
+                # always a news agency. Belief value of a news agency is always 0, so posterCamp will always be centrist
                 cumulativePostTypeCountPerCamp[posterCamp]["regular"] += 1
 
+            # OP shares to its neighbors
             nthLayer = 0 # all posts here are original posts, thus layer is 0
-            simulationAgentsList[currentPost.originalPoster].sharePost(currentPost, nthLayer, currentTime, networkData)
-            simulationAgentsList[currentPost.originalPoster].sharedPosts.add(currentPost.postID)
+            if currentPost.isMisinformation:
+                simulationAgentsList[currentPost.originalPoster].sharePost(currentPost, nthLayer, currentTime, networkData)
+                simulationAgentsList[currentPost.originalPoster].sharedPosts.add(currentPost.postID)
+            else:
+                agenciesList[currentPost.originalPoster].sharePost(currentPost, nthLayer, currentTime, networkData)
+                agenciesList[currentPost.originalPoster].sharedPosts.add(currentPost.postID)
             postsQueue.popleft()
-            #continue
 
         # all agents process what is in their feed at time currentTime
         for agentID in range(configData["Agents"]["Agent Count"]):
@@ -280,7 +285,7 @@ def simulationProper(configData, networkData, simulationAgentsList : list[Agent.
     return simulationData
 
 
-def readPosts(configData, agentsList):
+def readPosts(configData, agentsList, agenciesList):
     postsList = []
 
     for post in configData["Posts"]:
@@ -288,11 +293,12 @@ def readPosts(configData, agentsList):
             Post.generatePost(
                 postID=post["postID"],
                 postingTime=post["postingTime"],
-                originalPoster=random.randint(0, configData["Agents"]["Agent Count"]-1),
                 beliefValue=post["beliefValue"],
                 interestValue=post["interestValue"],
                 postTopic=post["postTopic"],
-                isMisinformation=post["misinformation"]
+                isMisinformation=post["misinformation"],
+                agentsList=agentsList,
+                agenciesList=agenciesList
             )
         )
 
@@ -316,7 +322,7 @@ def runSimulation():
     agentsList = mapGraphToAgents(configData["Agents"], networkData)
     agenciesList = mapGraphToNewsAgencies(agentsList, int(len(agentsList) * Constants.NEWS_AGENCY_PERCENTAGE))
 
-    simulationData = simulationProper(configData, networkData, agentsList)
+    simulationData = simulationProper(configData, networkData, agentsList, agenciesList)
 
     with open("output/simulation_output.json", "w") as f:
         json.dump(simulationData, f, indent=4)
