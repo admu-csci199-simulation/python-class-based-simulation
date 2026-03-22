@@ -148,6 +148,12 @@ def simulationProper(configData, networkData, simulationAgentsList : list[Agent.
         while (len(postsQueue) > 0 and postsQueue[0].postingTime == currentTime):
             currentPost = postsQueue[0]
 
+            # Assign post OP at time {currentTime}
+            if currentPost.isMisinformation:
+                currentPost.assignMisinfoOP(simulationAgentsList)
+            else:
+                currentPost.assignRealNewsOP(agenciesList)
+
             posterID = currentPost.originalPoster
             posterCamp = currentPost.classifyBeliefCamp()
 
@@ -296,9 +302,7 @@ def readPosts(configData, agentsList, agenciesList):
                 beliefValue=post["beliefValue"],
                 interestValue=post["interestValue"],
                 postTopic=post["postTopic"],
-                isMisinformation=post["misinformation"],
-                agentsList=agentsList,
-                agenciesList=agenciesList
+                isMisinformation=post["misinformation"]
             )
         )
 
