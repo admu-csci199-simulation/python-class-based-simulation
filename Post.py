@@ -2,7 +2,7 @@ import random
 import Constants
 import Agent
 
-def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None, interestValue=None, postTopic=None, isMisinformation=None, agentsList=None, agenciesList=None):
+def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None, interestValue=None, postTopic=None, isMisinformation=None):
     if beliefValue is None:
         beliefValue = random.randint(-4, 4)
     if originalPoster is None:
@@ -16,10 +16,10 @@ def generatePost(postID, beliefValue=None, originalPoster=None, postingTime=None
     if isMisinformation is None:
         isMisinformation = False
     
-    return Post(postID, beliefValue, interestValue, postingTime, postTopic, isMisinformation, agentsList, agenciesList)
+    return Post(postID, beliefValue, interestValue, postingTime, postTopic, isMisinformation)
 
 class Post:
-    def __init__(self, postID, beliefValue, interestValue, postingTime, postTopic, isMisinformation, agentsList, agenciesList):
+    def __init__(self, postID, beliefValue, interestValue, postingTime, postTopic, isMisinformation):
         self.postID = postID
         self.beliefValue = beliefValue
         self.interestValue = interestValue
@@ -27,12 +27,10 @@ class Post:
         self.postTopic = postTopic
         self.interactions = []
         self.isMisinformation = isMisinformation
-
-        self.originalPoster = None # index of agent/news agency
-        if isMisinformation:
-            self.originalPoster = self.assignMisinfoOP(agentsList)
-        else:
-            self.originalPoster = self.assignRealNewsOP(agenciesList)
+        
+        # index of agent/news agency. Only gets value when it is about to be posted
+        self.originalPoster = None
+        
 
     def __repr__(self):
         return f"post_{self.postID}"
@@ -69,8 +67,8 @@ class Post:
                 possibleOPs.append(i)
         
         chosenOPid = random.choice(possibleOPs)
-        return chosenOPid
+        self.originalPoster = chosenOPid
 
     def assignRealNewsOP(self, agenciesList: list[Agent.Agent]):
         chosenOPid = random.choice(range(len(agenciesList)))
-        return chosenOPid
+        self.originalPoster = chosenOPid
