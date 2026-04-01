@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import json
-import random
+from Random import rng as random
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")

@@ -1,5 +1,6 @@
 from math import lcm
-import random, time, os
+# from Random import rng as random
+import time, os
 
 # Flag to check if simulation should:
 # TRUE  -> update agent belief value before sharing
@@ -8,7 +9,7 @@ UPDATE_BELIEF_VALUE_BEFORE_SHARE = True
 
 # NETWORK STRUCTURE CONSTANTS
 GRAPH_SEED = 100
-random.seed(GRAPH_SEED)
+# random.seed(GRAPH_SEED)
 
 # divisible by:
 #   3 -     # of blocks/clusters
