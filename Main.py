@@ -85,7 +85,7 @@ def randomizePosts(agentsList):
     return postsQueue
 
 
-def simulationProper(configData, networkData, simulationAgentsList : list[Agent.Agent], agenciesList : list[Agent.Agent]):
+def simulationProper(configData, networkData, simulationAgentsList, agenciesList):
     postsQueue = readPosts(configData, simulationAgentsList, agenciesList)
 
     simulationData = {
