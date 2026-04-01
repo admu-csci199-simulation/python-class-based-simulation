@@ -51,7 +51,7 @@ class Post:
         
         raise RuntimeError("Agent belief value not in range")
 
-    def assignMisinfoOP(self, agentsList):
+    def assignMisinfoOP(self, agentsList: "list[Agent.Agent]"):
         possibleOPs = [] # indeces
         minBeliefDist = 1e9
 
@@ -63,12 +63,13 @@ class Post:
         
         # closest belief distance
         if len(possibleOPs) == 0:
-            if abs(agentsList[i].beliefValue - self.beliefValue) == minBeliefDist:
-                possibleOPs.append(i)
+            for i in range(len(agentsList)):
+                if abs(agentsList[i].beliefValue - self.beliefValue) == minBeliefDist:
+                    possibleOPs.append(i)
         
         chosenOPid = random.choice(possibleOPs)
         self.originalPoster = chosenOPid
 
-    def assignRealNewsOP(self, agenciesList):
+    def assignRealNewsOP(self, agenciesList: "list[Agent.Agent]"):
         chosenOPid = random.choice(range(len(agenciesList)))
         self.originalPoster = chosenOPid
