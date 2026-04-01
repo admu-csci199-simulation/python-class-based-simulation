@@ -1,9 +1,10 @@
 from math import e as EULER 
+from math import exp, pow
 from Post import Post
 from Helper import BernoulliTrial
 from PostInteraction import PostInteraction
 import Constants
-import random
+from Random import rng as random
 
 def generateNewsAgencies(size):
     agencies = [Agent(id=i, isNewsAgency=True) for i in range(size)]
@@ -15,13 +16,14 @@ def generateNewsAgencies(size):
     return agencies
 
 
-def generateAgents(agentsData, seed=Constants.GRAPH_SEED):
+def generateAgents(agentsData):
     agents = [Agent(i) for i in range(agentsData["Agent Count"])]
 
     # Set belief values
     for agentIdx in range(agentsData["Red Count"]):
         minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[0]
         assignedBeliefValue = random.randint(minBeliefValue, maxBeliefValue)
+        print(assignedBeliefValue)
         agents[agentIdx].setBeliefValue(assignedBeliefValue)
     for agentIdx in range(agentsData["Red Count"], agentsData["Red Count"] + agentsData["Centrist Count"]):
         minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[1]
@@ -165,7 +167,7 @@ class Agent:
         agentTolerance = self.tolerance
         beliefDistance = abs(postBeliefValue - self.beliefValue)
         
-        return 1/(1 + EULER**(agentSteepness*(beliefDistance-agentTolerance) - postInterestValue))
+        return 1/(1 + exp(agentSteepness*(beliefDistance-agentTolerance) - postInterestValue))
 
     def getDCCProbability(self, post: Post, time: int) -> float:
         "Get the Defensive Cognitive Cascade Probability given a Post."
@@ -181,6 +183,7 @@ class Agent:
         interestDecayConstant = 4
 
         dccProbability = self.getCognitiveResponse(post) * self.sharePropensity * (1 - (time/2880)**interestDecayConstant)
+        print(f'From Agent.py: {self.getCognitiveResponse(post)}, {dccProbability}')
         return dccProbability
     
     def addPostToFeedBuffer(self, post, layer) -> None:
@@ -196,7 +199,7 @@ class Agent:
         if len(self.feedBuffer) == 0:
             return 
 
-        for post, layer in self.feedBuffer:
+        for post, layer in sorted(list(self.feedBuffer), key=lambda x: (x[0].postingTime, x[0].postID)):
             self.feedQueue.append((post, layer))
                 
         self.feedBuffer.clear() 
