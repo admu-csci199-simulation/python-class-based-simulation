@@ -10,7 +10,7 @@ import imageio
 
 
 class Statistics:
-    def __init__(self, agents: List[Agent.Agent]):
+    def __init__(self, agents: "list[Agent.Agent]"):
         """
         Parameters:
         - interactions: list of PostInteractions
