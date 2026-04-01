@@ -154,7 +154,7 @@ class Agent:
         self.startingStatus = startingStatus
         self.offlineStartOffset = offlineStartOffset
 
-    def getCognitiveResponse(self, post: Post) -> float:
+    def getCognitiveResponse(self, post: "Post") -> float:
         if self.isNewsAgency:
             raise RuntimeError("Agent is a news agency, cannot get cognitive response.")
 
@@ -289,11 +289,11 @@ class Agent:
         
         raise RuntimeError("Agent is neither online or offline")
 
-    def addFollower(self, otherIdx: Agent) -> None:
+    def addFollower(self, otherIdx: "Agent") -> None:
         "Appends agent to followers."
         self.followers.append(otherIdx)
 
-    def adjustBeliefValue(self, post: Post) -> None:
+    def adjustBeliefValue(self, post: "Post") -> None:
         "Adjusts the agent belief value"
 
         if self.isNewsAgency:
