@@ -1,4 +1,4 @@
-import random
+from Random import rng as random
 
 
 EPSILON = 1e-9
@@ -12,7 +12,8 @@ def BernoulliTrial(probability, maxRange=None):
     # Case 1: float probability (0 <= p <= 1)
     if isinstance(probability, float) and maxRange is None:
         random_sample = random.random()
-        return random_sample < probability + EPSILON
+        print(probability, random_sample, random_sample < probability)
+        return random_sample < probability
 
     # Case 2: int probability with maxRange
     elif isinstance(probability, int) and isinstance(maxRange, int):

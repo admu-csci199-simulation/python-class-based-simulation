@@ -1,4 +1,4 @@
-import random
+from Random import rng as random
 import Constants
 import Agent
 

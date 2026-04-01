@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import json
-import random
+from Random import rng as random
 
 class AgentFrame(ctk.CTkFrame):
     def __init__(self, parent, app):

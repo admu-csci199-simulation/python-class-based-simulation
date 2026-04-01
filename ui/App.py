@@ -7,7 +7,7 @@ from tkinter import filedialog
 
 import customtkinter as ctk
 import json
-import random
+from Random import rng as random
 
 class App(ctk.CTk):
 
