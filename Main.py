@@ -1,6 +1,7 @@
 import os
 import json
-import random
+from Random import rng as random
+from Random import seed
 import Agent
 import Constants
 import GenerateGraph
@@ -80,7 +81,7 @@ def randomizePosts(agentsList):
             )
         )
     
-    postsList.sort(key=lambda post: post.postingTime)
+    postsList.sort(key=lambda post: (post.postingTime, post.postID))
     postsQueue = deque(postsList)
     return postsQueue
 
@@ -312,6 +313,7 @@ def readPosts(configData, agentsList, agenciesList):
     return postsQueue
 
 def runSimulation():
+    seed(Constants.GRAPH_SEED)
     with open(os.path.join("input", "config.json"), "r") as f:
         configData = json.load(f)
     
@@ -328,7 +330,7 @@ def runSimulation():
 
     simulationData = simulationProper(configData, networkData, agentsList, agenciesList)
 
-    with open("output/simulation_output.json", "w") as f:
+    with open("output/simulation_output1.json", "w") as f:
         json.dump(simulationData, f, indent=4)
     print("Simulation data saved in output/simulation_output.json")
 

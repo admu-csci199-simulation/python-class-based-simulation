@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import json
-import random
+from Random import rng as random
 from pathlib import Path
 from ui.SimulateFrame import SimulateFrame
 
