@@ -1,12 +1,6 @@
-import os
-import json
+import os, json, sys
 from Random import rng as random
-from Random import seed
-import Agent
-import Constants
-import GenerateGraph
-import Post
-import Statistics
+import Agent, Post, Constants, GenerateGraph, Statistics
 import copy
 from collections import deque
 from math import ceil
@@ -312,9 +306,9 @@ def readPosts(configData, agentsList, agenciesList):
 
     return postsQueue
 
-def runSimulation():
-    seed(Constants.GRAPH_SEED)
-    with open(os.path.join("input", "config.json"), "r") as f:
+def runSimulation(conf_name, output_name):
+
+    with open(os.path.join("input", conf_name), "r") as f:
         configData = json.load(f)
     
     # data for network visualziation
@@ -330,13 +324,18 @@ def runSimulation():
 
     simulationData = simulationProper(configData, networkData, agentsList, agenciesList)
 
-    with open("output/simulation_output1.json", "w") as f:
+    with open(os.path.join("output", output_name), "w") as f:
         json.dump(simulationData, f, indent=4)
-    print("Simulation data saved in output/simulation_output.json")
+    # print(f"Simulation data saved in output/{output_name}.json")
 
-    with open("output/network_output.json", "w") as f:
-        json.dump(networkData, f, indent=4)
-    print("Network data saved in output/network_output.json")
+    # with open("output/network_output.json", "w") as f:
+    #     json.dump(networkData, f, indent=4)
+    # print("Network data saved in output/network_output.json")
 
 if __name__ == "__main__":
-    runSimulation()
+    try:
+        conf_name = sys.argv[1]
+        output_name = sys.argv[2]
+        runSimulation(conf_name, output_name)
+    except:
+        print("Error on command line arguments.")

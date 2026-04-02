@@ -23,7 +23,6 @@ def generateAgents(agentsData):
     for agentIdx in range(agentsData["Red Count"]):
         minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[0]
         assignedBeliefValue = random.randint(minBeliefValue, maxBeliefValue)
-        print(assignedBeliefValue)
         agents[agentIdx].setBeliefValue(assignedBeliefValue)
     for agentIdx in range(agentsData["Red Count"], agentsData["Red Count"] + agentsData["Centrist Count"]):
         minBeliefValue, maxBeliefValue = Constants.BELIEF_VALUES[1]
@@ -183,7 +182,6 @@ class Agent:
         interestDecayConstant = 4
 
         dccProbability = self.getCognitiveResponse(post) * self.sharePropensity * (1 - (time/2880)**interestDecayConstant)
-        print(f'From Agent.py: {self.getCognitiveResponse(post)}, {dccProbability}')
         return dccProbability
     
     def addPostToFeedBuffer(self, post, layer) -> None:
