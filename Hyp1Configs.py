@@ -14,11 +14,17 @@ def split_into_three(total, min_value=1):
     c = total - a - b
     return a, b, c
 
+def split_ratio_90_9_1(total):
+    lurker = round(total * 0.90)
+    normal_sharer = round(total * 0.09)
+    active = total - lurker - normal_sharer  # ensure exact sum
+    return lurker, normal_sharer, active
+
 def generate_agents():
     agent_count = AGENTS_PER_FILE
 
     gullible, normal, stubborn = split_into_three(agent_count, agent_count//3)
-    lurker, normal_sharer, active = split_into_three(agent_count, agent_count//3)
+    lurker, normal_sharer, active = split_ratio_90_9_1(agent_count)
     red, centrist, blue = split_into_three(agent_count, agent_count//3)
 
     return {
@@ -116,7 +122,7 @@ def generate_file(index):
         "Posts": generate_posts()
     }
 
-    filename = f"config-{index}.json"
+    filename = f"hyp1-config-{index}.json"
     path = os.path.join(OUTPUT_FOLDER, filename)
 
     with open(path, "w") as f:
