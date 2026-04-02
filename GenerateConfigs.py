@@ -84,20 +84,21 @@ def generate_agents(agent_count):
         "Blue Count": blue
     }
 
-for test_case in range(400):
+test_cases = 200
+for test_case in range(test_cases):
     conf_data = {}
     conf_data["Agents"] = generate_agents(300)
     conf_data["Posts"] = []
     post_count = 300
 
     post_id = 0
-    if test_case < 100:
+    if test_case < test_cases//4:
         for post in range(post_count):
             generated = generate_random_posts(post_id, random.choice([True, False]))
             for x in generated:
                 conf_data["Posts"].append(x)
                 post_id += 1
-    elif test_case < 200:
+    elif test_case < test_cases//2:
         for regular_post in range(post_count//2):
             generated = generate_random_posts(post_id, True)
             for x in generated:
@@ -108,7 +109,7 @@ for test_case in range(400):
             for x in generated:
                 conf_data["Posts"].append(x)
                 post_id += 1
-    elif test_case < 300:
+    elif test_case < test_cases//4 * 3:
         for regular_post in range(post_count//2):
             generated = generate_random_posts(post_id, True)
             for x in generated:
@@ -119,7 +120,7 @@ for test_case in range(400):
             for x in generated:
                 conf_data["Posts"].append(x)
                 post_id += 1
-    elif test_case < 400:
+    elif test_case < test_cases:
         for regular_post in range(random.randint(post_count//6 * 5, post_count)):
             generated = generate_random_posts(post_id, True)
             for x in generated:
