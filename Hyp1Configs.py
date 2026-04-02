@@ -23,9 +23,9 @@ def split_ratio_90_9_1(total):
 def generate_agents():
     agent_count = AGENTS_PER_FILE
 
-    gullible, normal, stubborn = split_into_three(agent_count, agent_count//3)
+    gullible, normal, stubborn = split_into_three(agent_count, agent_count//4)
     lurker, normal_sharer, active = split_ratio_90_9_1(agent_count)
-    red, centrist, blue = split_into_three(agent_count, agent_count//3)
+    red, centrist, blue = split_into_three(agent_count, agent_count//4)
 
     return {
         "Agent Count": agent_count,
