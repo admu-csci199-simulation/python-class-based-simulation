@@ -122,7 +122,7 @@ def generate_file(index):
         "Posts": generate_posts()
     }
 
-    filename = f"hyp1-config-{index}.json"
+    filename = f"hyp7-config-{index}.json"
     path = os.path.join(OUTPUT_FOLDER, filename)
 
     with open(path, "w") as f:
