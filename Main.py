@@ -39,7 +39,7 @@ def mapGraphToAgents(agentsData, networkData):
 def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.Agent]", agenciesList: "list[Agent.Agent]"):
     
     postsQueue = readPosts(configData, simulationAgentsList, agenciesList)
-    simulationData = {p.postID : [0 for i in range(24*60)] for p in postsQueue} # for hypothesis 1
+    simulationData = {p.postID : [0 for i in range(24*60)] for p in postsQueue} # for hypothesis 7
 
     
     for currentTime in range(Constants.MAXIMUM_TIME):
