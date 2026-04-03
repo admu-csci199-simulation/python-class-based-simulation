@@ -5,6 +5,7 @@ import Constants
 INPUT_FOLDER = "input"
 SCRIPT_NAME = "Main.py"
 SEEDS = list(range(100))
+INPUT_CONFIG_PREFIX = "hyp1"
 
 def main():
     for s in SEEDS:
@@ -12,7 +13,7 @@ def main():
         seed(s) # set seed from Random.py
 
         for filename in os.listdir(INPUT_FOLDER):
-            if filename.endswith(".json"):
+            if filename.startswith(INPUT_CONFIG_PREFIX) and filename.endswith(".json"):
                 print(f"Processing: {filename}", end=' ')
                 
                 output_name = filename.split('.')[0] + "s-" + str(s) + "." + filename.split('.')[1]
