@@ -4,6 +4,12 @@ import json
 
 MAX_INTEREST_VAL = 21
 
+def split_into_three(total, min_value=1):
+    a = random.randint(min_value, total - 2*min_value)
+    b = random.randint(min_value, total - a - min_value)
+    c = total - a - b
+    return a, b, c
+
 def generate_belief_values(n, distribution):
     red_ratio, centrist_ratio, blue_ratio = distribution
 
@@ -70,18 +76,24 @@ def generate_posts(n):
 
 def generate_agents(n, distribution):
     red_ratio, centrist_ratio, blue_ratio = distribution
+    gullible, normal, stubborn = split_into_three(n, n//10)
+    lurker = round(n * 0.90)
+    normal_sharer = round(n* 0.09)
+    active = n - lurker - normal_sharer
+
     return {
         "Agent Count": n,
-        "Gullible Count": 20,
-        "Normal Count": 20,
-        "Stubborn Count": 20,
-        "Lurker Count": 54,
-        "Normal Sharer Count": 5,
-        "Active Count": 1,
+        "Gullible Count": gullible,
+        "Normal Count": normal,
+        "Stubborn Count": stubborn,
+        "Lurker Count": lurker,
+        "Normal Sharer Count": normal_sharer,
+        "Active Count": active,
         "Red Count": int(n * red_ratio),
         "Centrist Count": int(n * centrist_ratio),
         "Blue Count": int(n * blue_ratio)
     }
+
 
 def save_json(filename, distribution):
     data = {
