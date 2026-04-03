@@ -54,9 +54,7 @@ def generateStaticPostInformation(postsQueue):
         postID = post.postID
 
         staticPostInformation[f'post_{postID}'] = {
-            "isMisinformation": post.isMisinformation,
-            "post_camp": post.classifyBeliefCamp(),
-            "original_post_time" : post.postingTime,
+            "interest_value": post.getInterestValue(),
         }
 
     return staticPostInformation
@@ -84,15 +82,11 @@ def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.
     postsQueue = readPosts(configData, simulationAgentsList, agenciesList)
 
     simulationData = {
-        "static_data": {},
         "static_post_information": {},
-        "post_seen_data": {},
         "post_shared_data": {},
-        "dynamic_data": []
     }
-    simulationData["static_data"] = generateStaticData(configData)
     simulationData["static_post_information"] = generateStaticPostInformation(postsQueue)
-
+    
     # Dictionary for layer_information
     cumulativePostLayerCounts = {
         post["postID"]: {}
@@ -246,28 +240,15 @@ def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.
             postInformation[f"post_{postID}"] = {
                 "layer_information": layerInfo
             }
-                        
-        snapshot = {
-            "camp_distribution": campDistribution,
-            "post_type_count_per_camp": copy.deepcopy(cumulativePostTypeCountPerCamp),
-            "post_information": postInformation
-        }
-
-        simulationData["dynamic_data"].append(snapshot)
 
         # Update post_seen_data and post_shared_data
         for post in configData["Posts"]:
             postID = post["postID"]
 
-            postSeenData[f"post_{postID}"].append(
-                postSeenCounters[postID].copy()
-            )
-
             postSharedData[f"post_{postID}"].append(
-                postSharedCounters[postID].copy()
+                sum(postSharedCounters[postID].copy())
             )
 
-        simulationData["post_seen_data"] = postSeenData
         simulationData["post_shared_data"] = postSharedData
 
         # for networkData agent_states
