@@ -215,7 +215,7 @@ class Agent:
                     "post_type" : ("misinformation" if post.isMisinformation else "regular")
                 })
     
-    def processFeed(self, networkData, time: int) -> None:
+    def processFeed(self, networkData, time: int, simulationData) -> None:
         "Process all queued posts in feedQueue."
 
         if self.isNewsAgency:
@@ -226,7 +226,7 @@ class Agent:
                 self.adjustBeliefValue(post)
             dccProbability = self.getDCCProbability(post, time)
             if BernoulliTrial(dccProbability):
-                self.acceptPost(networkData, time, post, layer)
+                self.acceptPost(networkData, time, post, layer, simulationData)
             else:
                 # generate PostInteraction with isShared==False
                 self.interactionsDone.append(PostInteraction(      
@@ -242,7 +242,7 @@ class Agent:
 
         self.feedQueue.clear()
 
-    def acceptPost(self, networkData, time: int, post: "Post", layer: int) -> None:
+    def acceptPost(self, networkData, time: int, post: "Post", layer: int, simulationData) -> None:
         "Does all needed processes once an agent accepts the contents of a post"
         
         if post.postID in self.sharedPosts:
@@ -265,6 +265,7 @@ class Agent:
                 layer=layer
             )
         )
+        simulationData[post.postID][time-post.postingTime] += 1
 
         self.sharedPosts.add(post.postID)
 
