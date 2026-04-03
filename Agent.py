@@ -222,8 +222,6 @@ class Agent:
             raise RuntimeError("Agent is a news agency, cannot take in shared posts.")
 
         for post, layer in self.feedQueue:
-            if Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
-                self.adjustBeliefValue(post)
             dccProbability = self.getDCCProbability(post, time)
             if BernoulliTrial(dccProbability):
                 self.acceptPost(networkData, time, post, layer)
@@ -267,10 +265,6 @@ class Agent:
         )
 
         self.sharedPosts.add(post.postID)
-
-        # Update belief value after sharing
-        if not Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
-            self.adjustBeliefValue(post)
 
     def hasPostBeenShared(self, post: "Post") -> bool:
         "Checks if a post has already been shared by an agent"
