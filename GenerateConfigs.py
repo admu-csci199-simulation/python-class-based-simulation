@@ -98,6 +98,6 @@ for test_case in range(test_cases):
             conf_data["Posts"].append(x)
             post_id += 1
 
-    config_name = f"config_{test_case}.json"
+    config_name = f"hyp9-config-{test_case}.json"
     with open(os.path.join("input", config_name), 'w') as f:
         json.dump(conf_data, f, indent=4)
