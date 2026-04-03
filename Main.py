@@ -55,8 +55,6 @@ def generateStaticPostInformation(postsQueue):
 
         staticPostInformation[f'post_{postID}'] = {
             "isMisinformation": post.isMisinformation,
-            "post_camp": post.classifyBeliefCamp(),
-            "original_post_time" : post.postingTime,
         }
 
     return staticPostInformation
@@ -84,14 +82,30 @@ def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.
     postsQueue = readPosts(configData, simulationAgentsList, agenciesList)
 
     simulationData = {
-        "static_data": {},
         "static_post_information": {},
-        "post_seen_data": {},
-        "post_shared_data": {},
-        "dynamic_data": []
+        "agent_share_data" : {}
     }
-    simulationData["static_data"] = generateStaticData(configData)
-    simulationData["static_post_information"] = generateStaticPostInformation(postsQueue)
+
+    regular_info_count = 0
+    misinfo_count = 0
+    
+    for post in postsQueue:
+        if post.isMisinformation:
+            misinfo_count += 1
+        else:
+            regular_info_count += 1
+
+    simulationData["static_post_information"] = {
+        "regular_info_count" : regular_info_count,
+        "misinformation_count" : misinfo_count
+    }
+    
+    for agent in simulationAgentsList:
+        simulationData["agent_share_data"][f'Agent_{agent.id}'] = {
+            "agent_classification" : agent.classifyAgentType(),
+            "regular_information_shares" : 0,
+            "misinformation_shares" : 0,
+        }
 
     # Dictionary for layer_information
     cumulativePostLayerCounts = {
@@ -216,6 +230,12 @@ def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.
                     idx = campIndex[camp]
 
                     postSharedCounters[postID][idx] += 1
+                
+                # tabulate shares per agent
+                if isMisinfo:
+                    simulationData["agent_share_data"][f'Agent_{agentID}']["misinformation_shares"] += 1
+                else:
+                    simulationData["agent_share_data"][f'Agent_{agentID}']["regular_information_shares"] += 1
 
                 cumulativePostTypeCountPerCamp[postCamp]["interactions"] += 1
 
@@ -246,29 +266,6 @@ def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.
             postInformation[f"post_{postID}"] = {
                 "layer_information": layerInfo
             }
-                        
-        snapshot = {
-            "camp_distribution": campDistribution,
-            "post_type_count_per_camp": copy.deepcopy(cumulativePostTypeCountPerCamp),
-            "post_information": postInformation
-        }
-
-        simulationData["dynamic_data"].append(snapshot)
-
-        # Update post_seen_data and post_shared_data
-        for post in configData["Posts"]:
-            postID = post["postID"]
-
-            postSeenData[f"post_{postID}"].append(
-                postSeenCounters[postID].copy()
-            )
-
-            postSharedData[f"post_{postID}"].append(
-                postSharedCounters[postID].copy()
-            )
-
-        simulationData["post_seen_data"] = postSeenData
-        simulationData["post_shared_data"] = postSharedData
 
         # for networkData agent_states
         for agentID in range(configData["Agents"]["Agent Count"]):
@@ -333,9 +330,9 @@ def runSimulation(conf_name, output_name):
     # print("Network data saved in output/network_output.json")
 
 if __name__ == "__main__":
-    try:
-        conf_name = sys.argv[1]
-        output_name = sys.argv[2]
-        runSimulation(conf_name, output_name)
-    except:
-        print("Error on command line arguments.")
+    # try:
+    conf_name = sys.argv[1]
+    output_name = sys.argv[2]
+    runSimulation(conf_name, output_name)
+    # except:
+    #     print("Error on command line arguments.")
