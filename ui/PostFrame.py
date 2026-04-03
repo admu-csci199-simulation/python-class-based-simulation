@@ -173,7 +173,6 @@ class PostFrame(ctk.CTkFrame):
     def go_back(self):
         self.app.show_agent_screen()
 
-
     def add_post(self):
         # Parse Inputs
         try:
@@ -276,8 +275,6 @@ class PostFrame(ctk.CTkFrame):
                 raise ValueError
 
             posts_added = 0
-
-
             
             for _ in range(count):
                 is_misinfo = random.choice([True, False])
