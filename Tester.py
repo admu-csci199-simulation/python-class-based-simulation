@@ -16,7 +16,7 @@ def main():
             if filename.startswith(INPUT_CONFIG_PREFIX) and filename.endswith(".json"):
                 print(f"Processing: {filename}", end=' ')
                 
-                output_name = filename.split('.')[0] + "s-" + str(s) + "." + filename.split('.')[1]
+                output_name = filename.split('.')[0] + "s-" + str(s)
                 result = subprocess.run(
                     [sys.executable, SCRIPT_NAME, filename, output_name],
                     capture_output=True,
