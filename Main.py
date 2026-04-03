@@ -37,9 +37,9 @@ def mapGraphToAgents(agentsData, networkData):
 
 
 def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.Agent]", agenciesList: "list[Agent.Agent]"):
-    simulationData = {}
     
     postsQueue = readPosts(configData, simulationAgentsList, agenciesList)
+    simulationData = {p.postID : [0 for i in range(24*60)] for p in postsQueue} # for hypothesis 1
 
     
     for currentTime in range(Constants.MAXIMUM_TIME):
@@ -69,7 +69,7 @@ def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.
             currentAgent = simulationAgentsList[agentID]
             
             if (currentAgent.isOnline(currentTime)):
-                currentAgent.processFeed(networkData, currentTime)
+                currentAgent.processFeed(networkData, currentTime, simulationData)
         
         # transfer all new posts from feedBuffer to feedQueue for all agents 
         for agentID in range(configData["Agents"]["Agent Count"]):
