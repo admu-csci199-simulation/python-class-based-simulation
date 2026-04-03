@@ -108,7 +108,7 @@ for i in range(10):
 
         post_id = 0
         for post in range(post_count):
-            generated = generate_random_posts(post_id, random.choice([True, False]), (post%10)-4)
+            generated = generate_random_posts(post_id, random.choice([True, False]), (post%9)-4)
             for x in generated:
                 conf_data["Posts"].append(x)
                 post_id += 1
