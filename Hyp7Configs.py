@@ -5,7 +5,7 @@ import random
 
 OUTPUT_FOLDER = "input"
 NUM_FILES = 100               # how many json files to generate
-POSTS_PER_FILE = 100          # number of posts in each file
+POSTS_PER_FILE = 10           # number of posts in each file
 AGENTS_PER_FILE = 1000
 
 def split_into_three(total, min_value=1):
