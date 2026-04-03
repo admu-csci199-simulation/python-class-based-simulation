@@ -337,5 +337,5 @@ if __name__ == "__main__":
         conf_name = sys.argv[1]
         output_name = sys.argv[2]
         runSimulation(conf_name, output_name)
-    except:
-        print("Error on command line arguments.")
+    except Exception as e:
+        print("Error: ", e)
