@@ -4,7 +4,7 @@ def generate_random_posts(post_id, is_misinfo):
     posts = []
 
     base_interest = random.randint(-10, 21)
-    interest_val = base_interest + 3 if is_misinfo else base_interest
+    interest_val = min(base_interest + 3 if is_misinfo else base_interest, 21)
 
     posting_time = (random.randint(0, 1440) if is_misinfo else random.randint(0, 2880))
 
