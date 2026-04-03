@@ -324,6 +324,7 @@ def runSimulation(conf_name, output_name):
 
     simulationData = simulationProper(configData, networkData, agentsList, agenciesList)
 
+    os.makedirs("output", exist_ok=True)
     with open(os.path.join("output", output_name), "w") as f:
         json.dump(simulationData, f, indent=4)
     # print(f"Simulation data saved in output/{output_name}.json")

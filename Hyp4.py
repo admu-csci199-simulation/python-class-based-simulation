@@ -79,8 +79,8 @@ def generate_agents(n, distribution):
     red_ratio, centrist_ratio, blue_ratio = distribution
     gullible, normal, stubborn = split_into_three(n, n//10)
     lurker = round(n * 0.90)
-    normal = round(n)
-    active = n - lurker - normal
+    normal_sharer = round(n* 0.09)
+    active = n - lurker - normal_sharer
 
     return {
         "Agent Count": n,
@@ -88,7 +88,7 @@ def generate_agents(n, distribution):
         "Normal Count": normal,
         "Stubborn Count": stubborn,
         "Lurker Count": lurker,
-        "Normal Sharer Count": normal,
+        "Normal Sharer Count": normal_sharer,
         "Active Count": active,
         "Red Count": int(n * red_ratio),
         "Centrist Count": int(n * centrist_ratio),
