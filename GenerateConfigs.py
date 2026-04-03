@@ -30,7 +30,7 @@ def generate_random_posts(post_id, is_misinfo):
 
             post_id += 1
 
-            new_interest = min(20, previous_interest + 3)
+            new_interest = min(21, previous_interest + 3)
             delay = random.randint(300, 720)
             new_time = previous_time + delay
 
