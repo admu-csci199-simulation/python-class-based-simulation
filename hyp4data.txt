@@ -1,0 +1,3 @@
+{
+    "simulation_time": [red_agents_count, centrist_agents_count, blue_agents_count]   
+}
