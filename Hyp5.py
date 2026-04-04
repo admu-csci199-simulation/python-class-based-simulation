@@ -105,8 +105,8 @@ def save_json(filename, distribution):
         json.dump(data, f, indent=4)
 
 def main():
-    for i in range(3):
-        save_json(os.path.join("input", f"hyp5-config-{i+1}.json"), (1/3, 1/3, 1/3))
+    for i in range(100):
+        save_json(os.path.join("input", f"hyp5-config-{i}.json"), (1/3, 1/3, 1/3))
 
 if __name__ == "__main__":
     main()
