@@ -112,8 +112,9 @@ def main():
         "red": (0.8, 0.1, 0.1)
     }
 
-    for name, dist in distributions.items():
-        save_json(os.path.join("input", f"hyp3-config-{name}.json"), dist)
+    for i in range(25):
+        for name, dist in distributions.items():
+            save_json(os.path.join("input", f"hyp3-{name}{i}.json"), dist)
 
 if __name__ == "__main__":
     main()
