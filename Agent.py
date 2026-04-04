@@ -118,6 +118,7 @@ class Agent:
         self.feedBuffer = set()
         self.interactionsDone = []
         self.sharedPosts = set()
+        self.seenposts = set()
 
         self.isNewsAgency = isNewsAgency
 
@@ -215,15 +216,23 @@ class Agent:
                     "post_type" : ("misinformation" if post.isMisinformation else "regular")
                 })
     
-    def processFeed(self, networkData, time: int) -> None:
+    def processFeed(self, networkData, time: int, hyp3_data: dict) -> None:
         "Process all queued posts in feedQueue."
 
         if self.isNewsAgency:
             raise RuntimeError("Agent is a news agency, cannot take in shared posts.")
 
+        agentBV = self.classifyAgentBelief()
         for post, layer in self.feedQueue:
-            if Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
-                self.adjustBeliefValue(post)
+            # if Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
+            #     self.adjustBeliefValue(post)
+
+            if post not in self.seenposts:
+                self.seenposts.add(post)
+                postBV = post.classifyBeliefCamp()
+                index = 0 if postBV == "red" else (1 if postBV == "centrist" else 2)
+                hyp3_data[agentBV][index] += 1
+
             dccProbability = self.getDCCProbability(post, time)
             if BernoulliTrial(dccProbability):
                 self.acceptPost(networkData, time, post, layer)
@@ -269,8 +278,8 @@ class Agent:
         self.sharedPosts.add(post.postID)
 
         # Update belief value after sharing
-        if not Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
-            self.adjustBeliefValue(post)
+        # if not Constants.UPDATE_BELIEF_VALUE_BEFORE_SHARE:
+        #     self.adjustBeliefValue(post)
 
     def hasPostBeenShared(self, post: "Post") -> bool:
         "Checks if a post has already been shared by an agent"

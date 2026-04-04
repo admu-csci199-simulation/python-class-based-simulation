@@ -102,7 +102,11 @@ def save_json(filename, distribution):
     }
 
     with open(filename, "w") as f:
-        json.dump(data, f, indent=4)
+        try:
+            json.dump(data, f, indent=4)
+            print("Successfully saved JSON to", filename)
+        except Exception as e:
+            print(f"Error occurred while saving JSON to {filename}: {e}")
 
 def main():
     distributions = {

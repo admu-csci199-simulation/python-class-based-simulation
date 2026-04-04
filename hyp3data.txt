@@ -1,0 +1,13 @@
+{
+    agent_belief_camp: [red_post_seen_count, 
+                        centrist_post_seen_count, 
+                        blue_post_seen_count], 
+}
+
+example: 
+{
+    "red": [270, 30, 30],
+    "centrist": [30, 270, 30],
+    "blue": [30, 30, 270]
+}
+
