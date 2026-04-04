@@ -31,7 +31,7 @@ def generate_posts(n):
 
     i = 0
     while i < n:
-        is_misinfo = True if i % 2 == 0 else False
+        is_misinfo = False if i == 0 else True
         base_interest = random.randint(-10, 21)
         interest_val = min(base_interest + 3, MAX_INTEREST_VAL) if is_misinfo else min(base_interest, MAX_INTEREST_VAL)
         posting_time = (random.randint(0, 1440) if is_misinfo else random.randint(0, 2880))
