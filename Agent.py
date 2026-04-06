@@ -239,6 +239,7 @@ class Agent:
                         layer=layer
                     )
                 )
+                simulationData[post.postID][time-post.postingTime] += 1
 
         self.feedQueue.clear()
 
