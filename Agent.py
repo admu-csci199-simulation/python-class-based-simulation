@@ -266,7 +266,9 @@ class Agent:
             )
         )
         simulationData[post.postID]["isMisinformation"] = post.isMisinformation
-        simulationData[post.postID]["interactions"][time-post.postingTime] += 1
+        if layer not in simulationData[post.postID]["interactions"]: 
+            simulationData[post.postID]["interactions"][layer] = 0
+        simulationData[post.postID]["interactions"][layer] += 1
 
 
         self.sharedPosts.add(post.postID)
