@@ -1,0 +1,36 @@
+============================================================
+TWO-WAY ANOVA RESULTS
+Response variable: log(total_shares + 1)
+============================================================
+
+[Post Belief Value]
+  Sum of Squares : 8.6609
+  df             : 8
+  F-statistic    : 1.7267
+  p-value        : 8.6965e-02  (not significant)
+  η² (effect)    : 0.0010  (negligible)
+
+[Agent Distribution]
+  Sum of Squares : 4.5063
+  df             : 9
+  F-statistic    : 0.7986
+  p-value        : 6.1763e-01  (not significant)
+  η² (effect)    : 0.0005  (negligible)
+
+[Interaction (Belief × Distribution)]
+  Sum of Squares : 71.3644
+  df             : 72
+  F-statistic    : 1.5809
+  p-value        : 1.3224e-03  **
+  η² (effect)    : 0.0080  (negligible)
+
+[Residual]
+  Sum of Squares : 4406.4042
+  df             : 7028
+  η² (effect)    : 0.4952  (large)
+
+============================================================
+Significance codes: *** p<0.001  ** p<0.01  * p<0.05
+Effect size (η²):   <0.01 negligible | 0.01-0.06 small |
+                    0.06-0.14 medium  | >0.14 large
+============================================================
