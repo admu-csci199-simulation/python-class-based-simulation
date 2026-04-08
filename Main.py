@@ -39,7 +39,20 @@ def mapGraphToAgents(agentsData, networkData):
 def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.Agent]", agenciesList: "list[Agent.Agent]"):
     
     postsQueue = readPosts(configData, simulationAgentsList, agenciesList)
-    simulationData = {p.postID : [0 for i in range(24*60)] for p in postsQueue} # for hypothesis 1
+    simulationData = {
+        p.postID: {
+            "isMisinformation": p.isMisinformation,
+            "beliefValue"     : p.beliefValue,
+            "interactions"    : [0] * (24 * 60),
+            "interactionsByBeliefCamp": {
+                "red"     : [0] * (24 * 60),
+                "centrist": [0] * (24 * 60),
+                "blue"    : [0] * (24 * 60),
+            },
+            "agentsReached": [],   # agent IDs that accepted this post
+        }
+        for p in postsQueue
+    } # for hypothesis 12
 
     
     for currentTime in range(Constants.MAXIMUM_TIME):

@@ -239,7 +239,6 @@ class Agent:
                         layer=layer
                     )
                 )
-                simulationData[post.postID][time-post.postingTime] += 1
 
         self.feedQueue.clear()
 
@@ -266,7 +265,10 @@ class Agent:
                 layer=layer
             )
         )
-        simulationData[post.postID][time-post.postingTime] += 1
+        t_delta = time - post.postingTime
+        simulationData[post.postID]["interactions"][t_delta] += 1
+        simulationData[post.postID]["interactionsByBeliefCamp"][self.classifyAgentBelief()][t_delta] += 1
+        simulationData[post.postID]["agentsReached"].append(self.id)
 
         self.sharedPosts.add(post.postID)
 
