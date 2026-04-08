@@ -55,6 +55,7 @@ def generateStaticPostInformation(postsQueue):
 
         staticPostInformation[f'post_{postID}'] = {
             "interest_value": post.getInterestValue(),
+            "post_time": post.postingTime,
         }
 
     return staticPostInformation
