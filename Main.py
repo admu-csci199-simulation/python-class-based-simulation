@@ -231,11 +231,11 @@ def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.
 
                     postSharedCounters[postID][idx] += 1
                 
-                # tabulate shares per agent
-                if isMisinfo:
-                    simulationData["agent_share_data"][f'Agent_{agentID}']["misinformation_shares"] += 1
-                else:
-                    simulationData["agent_share_data"][f'Agent_{agentID}']["regular_information_shares"] += 1
+                    # tabulate shares per agent
+                    if isMisinfo:
+                        simulationData["agent_share_data"][f'Agent_{agentID}']["misinformation_shares"] += 1
+                    else:
+                        simulationData["agent_share_data"][f'Agent_{agentID}']["regular_information_shares"] += 1
 
                 cumulativePostTypeCountPerCamp[postCamp]["interactions"] += 1
 

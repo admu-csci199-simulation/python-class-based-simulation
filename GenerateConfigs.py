@@ -100,34 +100,34 @@ for test_case in range(test_cases):
                 post_id += 1
     elif test_case < test_cases//2:
         for regular_post in range(post_count//2):
-            generated = generate_random_posts(post_id, True)
+            generated = generate_random_posts(post_id, False)
             for x in generated:
                 conf_data["Posts"].append(x)
                 post_id += 1
         for misinfo_post in range(post_count//2):
-            generated = generate_random_posts(post_id, False)
+            generated = generate_random_posts(post_id, True)
             for x in generated:
                 conf_data["Posts"].append(x)
                 post_id += 1
     elif test_case < test_cases//4 * 3:
         for regular_post in range(post_count//2):
-            generated = generate_random_posts(post_id, True)
+            generated = generate_random_posts(post_id, False)
             for x in generated:
                 conf_data["Posts"].append(x)
                 post_id += 1
         for misinfo_post in range(post_count//6):
-            generated = generate_random_posts(post_id, False)
-            for x in generated:
-                conf_data["Posts"].append(x)
-                post_id += 1
-    elif test_case < test_cases:
-        for regular_post in range(random.randint(post_count//6 * 5, post_count)):
             generated = generate_random_posts(post_id, True)
             for x in generated:
                 conf_data["Posts"].append(x)
                 post_id += 1
-        for misinfo_post in range(post_count-post_id, post_count+1):
+    elif test_case < test_cases:
+        for regular_post in range(450):
             generated = generate_random_posts(post_id, False)
+            for x in generated:
+                conf_data["Posts"].append(x)
+                post_id += 1
+        for misinfo_post in range(50):
+            generated = generate_random_posts(post_id, True)
             for x in generated:
                 conf_data["Posts"].append(x)
                 post_id += 1
