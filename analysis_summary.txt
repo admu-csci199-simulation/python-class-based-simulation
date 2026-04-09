@@ -1,0 +1,25 @@
+Hyp2 analysis summary
+====================
+Output dir: /Users/jamesmostajo/Documents/CSCI199/python-class-based-simulation/output
+Runs loaded: 200 | Errors: 0
+
+Metric per run:
+  D = (M_share_total/M_avail) - (R_share_total/R_avail)
+  Interpretation: D>0 => misinformation shared more per available post than regular info.
+
+Within-group one-sample t-tests (H1: mean(D) > 0)
+- random    n=50   mean=-177.987646 CI95=[-191.142945, -164.832346] t=-27.1890 p(one-sided)=1
+- misinfo_gt n=50   mean=-170.217733 CI95=[-180.929695, -159.505771] t=-31.9330 p(one-sided)=1
+- equal     n=50   mean=-172.816356 CI95=[-195.123739, -150.508972] t=-15.5683 p(one-sided)=1
+- real_gt   n=50   mean=-189.906730 CI95=[-197.061946, -182.751515] t=-53.3362 p(one-sided)=1
+
+Across-group Welch ANOVA on D
+- k=4 F=3.032436 df1=3.0 df2=27.438 p=0.0461253
+
+Post-hoc pairwise Welch t-tests (two-sided) with Holm correction
+- equal vs misinfo_gt: mean_a=-172.816356 mean_b=-170.217733 t=-0.2110 p_raw=0.833474 p_holm=1
+- equal vs random: mean_a=-172.816356 mean_b=-177.987646 t=+0.4013 p_raw=0.689293 p_holm=1
+- equal vs real_gt: mean_a=-172.816356 mean_b=-189.906730 t=+1.4660 p_raw=0.147952 p_holm=0.591809
+- misinfo_gt vs random: mean_a=-170.217733 mean_b=-177.987646 t=+0.9204 p_raw=0.359725 p_holm=1
+- misinfo_gt vs real_gt: mean_a=-170.217733 mean_b=-189.906730 t=+3.0715 p_raw=0.00285642 p_holm=0.0171385
+- random vs real_gt: mean_a=-177.987646 mean_b=-189.906730 t=+1.5995 p_raw=0.113887 p_holm=0.569437

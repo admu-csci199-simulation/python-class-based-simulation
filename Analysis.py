@@ -1,755 +1,366 @@
-import os
 import re
 import json
+import math
+import argparse
 from pathlib import Path
+from typing import Dict, Any, List, Tuple
 
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
 from scipy import stats
 
 
-# ============================================================
-# CONFIG
-# ============================================================
-
-INPUT_FOLDER = "output"
-OUTPUT_FOLDER = "analysis_results"
-
-# Filename example: hyp2-config-17s-0.json
-# Extract the number before the 's' in "config-17s"
-FILENAME_REGEX = re.compile(r"config-(\d+)s", re.IGNORECASE)
-
-GROUP_ORDER = ["random", "misinfo_gt", "equal", "real_gt"]
-
-
-# ============================================================
-# GROUP MAPPING
-# ============================================================
-
-def get_distribution_group(config_num: int) -> str:
-    if 0 <= config_num <= 49:
+# ----------------------------
+# Config grouping (x -> group)
+# ----------------------------
+def distribution_group_from_config(x: int) -> str:
+    if 0 <= x <= 49:
         return "random"
-    elif 50 <= config_num <= 99:
+    if 50 <= x <= 99:
         return "misinfo_gt"
-    elif 100 <= config_num <= 149:
+    if 100 <= x <= 149:
         return "equal"
-    elif 150 <= config_num <= 199:
+    if 150 <= x <= 199:
         return "real_gt"
+    return "unknown"
+
+
+# ----------------------------
+# File discovery
+# ----------------------------
+# Accept:
+#   hyp2-config-12s-0
+#   hyp2-config-12s-0.json
+RUN_FILE_RE = re.compile(r"^hyp2-config-(?P<x>\d+)s-(?P<seed>\d+)(?P<ext>\.json)?$")
+
+
+def find_run_files(output_dir: Path) -> List[Tuple[Path, int, int]]:
+    runs = []
+    for p in output_dir.iterdir():
+        if not p.is_file():
+            continue
+        m = RUN_FILE_RE.match(p.name)
+        if not m:
+            continue
+        x = int(m.group("x"))
+        seed = int(m.group("seed"))
+        runs.append((p, x, seed))
+    runs.sort(key=lambda t: (t[1], t[2], str(t[0])))
+    return runs
+
+
+# ----------------------------
+# Metric computation per run
+# ----------------------------
+def compute_run_metric(run_data: Dict[str, Any]) -> Dict[str, float]:
+    """
+    Expects structure:
+    {
+      "static_post_information": {"regular_info_count": R_avail, "misinformation_count": M_avail},
+      "agent_share_data": {"Agent_0": {"regular_information_shares": R_i, "misinformation_shares": M_i}, ...}
+    }
+
+    Returns system-level:
+      D = (M_share_total/M_avail) - (R_share_total/R_avail)
+    """
+    spi = run_data.get("static_post_information", {})
+    R_avail = float(spi.get("regular_info_count", 0.0))
+    M_avail = float(spi.get("misinformation_count", 0.0))
+
+    agent_share_data = run_data.get("agent_share_data", {})
+    R_share_total = 0.0
+    M_share_total = 0.0
+
+    for _, a in agent_share_data.items():
+        R_share_total += float(a.get("regular_information_shares", 0.0))
+        M_share_total += float(a.get("misinformation_shares", 0.0))
+
+    if R_avail <= 0 or M_avail <= 0:
+        D = float("nan")
     else:
-        return "unknown"
+        D = (M_share_total / M_avail) - (R_share_total / R_avail)
+
+    return {
+        "R_avail": R_avail,
+        "M_avail": M_avail,
+        "R_share_total": R_share_total,
+        "M_share_total": M_share_total,
+        "D": D,
+    }
 
 
-# ============================================================
-# UTILITIES
-# ============================================================
-
-def ensure_output_dir():
-    Path(OUTPUT_FOLDER).mkdir(parents=True, exist_ok=True)
-
-
-def safe_div(numerator, denominator):
-    if denominator is None or denominator == 0:
-        return np.nan
-    return numerator / denominator
-
-
-def parse_config_from_filename(filename: str):
-    match = FILENAME_REGEX.search(filename)
-    if not match:
-        return None
-    return int(match.group(1))
-
-
-def holm_correction(pvals):
-    """
-    Holm-Bonferroni correction.
-    Returns adjusted p-values in original order.
-    """
-    pvals = np.array(pvals, dtype=float)
-    m = len(pvals)
-    order = np.argsort(pvals)
-    sorted_p = pvals[order]
-
-    adjusted = np.empty(m, dtype=float)
-    for i, p in enumerate(sorted_p):
-        adjusted[i] = (m - i) * p
-
-    # enforce monotonicity
-    for i in range(1, m):
-        adjusted[i] = max(adjusted[i], adjusted[i - 1])
-
-    adjusted = np.minimum(adjusted, 1.0)
-
-    result = np.empty(m, dtype=float)
-    result[order] = adjusted
-    return result
-
-
-# ============================================================
-# STAT TESTS
-# ============================================================
-
-def one_sample_ttest_greater(sample, popmean=0.0):
-    """
-    One-sample one-tailed t-test: H1 = mean(sample) > popmean
-    """
-    sample = np.asarray(sample, dtype=float)
-    sample = sample[np.isfinite(sample)]
-
-    n = len(sample)
+# ----------------------------
+# Stats helpers
+# ----------------------------
+def one_sided_one_sample_ttest_greater_than_zero(x: np.ndarray) -> Dict[str, float]:
+    x = x[np.isfinite(x)]
+    n = int(x.size)
     if n < 2:
-        return {
-            "n": n,
-            "mean": np.nan,
-            "sd": np.nan,
-            "t_stat": np.nan,
-            "p_value": np.nan,
-            "cohen_d": np.nan,
-        }
+        return {"n": n, "t": float("nan"), "p_one_sided": float("nan"), "mean": float(np.nan), "sd": float(np.nan)}
 
-    mean_val = np.mean(sample)
-    sd_val = np.std(sample, ddof=1)
+    t_stat, p_two_sided = stats.ttest_1samp(x, popmean=0.0, nan_policy="omit")
 
-    t_stat, p_two = stats.ttest_1samp(sample, popmean=popmean, nan_policy='omit')
-
-    if np.isnan(t_stat):
-        p_one = np.nan
-    elif t_stat > 0:
-        p_one = p_two / 2
+    if math.isnan(t_stat):
+        p_one_sided = float("nan")
     else:
-        p_one = 1 - (p_two / 2)
-
-    cohen_d = np.nan
-    if sd_val > 0:
-        cohen_d = (mean_val - popmean) / sd_val
-
-    return {
-        "n": n,
-        "mean": mean_val,
-        "sd": sd_val,
-        "t_stat": t_stat,
-        "p_value": p_one,
-        "cohen_d": cohen_d,
-    }
-
-
-def wilcoxon_greater_zero(sample):
-    """
-    One-sided Wilcoxon signed-rank test: H1 = median(sample) > 0
-    """
-    sample = np.asarray(sample, dtype=float)
-    sample = sample[np.isfinite(sample)]
-
-    nonzero = sample[sample != 0]
-    n = len(nonzero)
-
-    if n < 1:
-        return {
-            "n": n,
-            "stat": np.nan,
-            "p_value": np.nan,
-            "median": np.nan,
-        }
-
-    try:
-        stat, p = stats.wilcoxon(nonzero, alternative="greater", zero_method="wilcox")
-    except Exception:
-        stat, p = np.nan, np.nan
+        # Convert 2-sided to 1-sided for H1: mean > 0
+        if t_stat >= 0:
+            p_one_sided = p_two_sided / 2.0
+        else:
+            p_one_sided = 1.0 - (p_two_sided / 2.0)
 
     return {
         "n": n,
-        "stat": stat,
-        "p_value": p,
-        "median": np.median(sample) if len(sample) > 0 else np.nan,
+        "t": float(t_stat),
+        "p_one_sided": float(p_one_sided),
+        "mean": float(np.mean(x)),
+        "sd": float(np.std(x, ddof=1)),
     }
 
 
-def welch_anova(df, value_col, group_col):
-    """
-    Manual Welch's ANOVA
-    """
-    groups = []
-    for g, sub in df.groupby(group_col):
-        vals = sub[value_col].dropna().values
-        if len(vals) >= 2:
-            groups.append((g, vals))
+def mean_ci95(x: np.ndarray) -> Dict[str, float]:
+    x = x[np.isfinite(x)]
+    n = int(x.size)
+    if n < 2:
+        return {"n": n, "mean": float(np.nan), "ci95_low": float(np.nan), "ci95_high": float(np.nan)}
+    m = float(np.mean(x))
+    s = float(np.std(x, ddof=1))
+    se = s / math.sqrt(n)
+    tcrit = float(stats.t.ppf(0.975, df=n - 1))
+    return {"n": n, "mean": m, "ci95_low": m - tcrit * se, "ci95_high": m + tcrit * se}
 
-    k = len(groups)
+
+def welchs_anova_oneway(groups: Dict[str, np.ndarray]) -> Dict[str, float]:
+    """
+    Welch's one-way ANOVA (heteroscedastic).
+
+    Returns F, df1, df2, p.
+    """
+    gvals = {k: v[np.isfinite(v)] for k, v in groups.items()}
+    gvals = {k: v for k, v in gvals.items() if v.size >= 2}
+
+    k = len(gvals)
     if k < 2:
-        return {"k": k, "F": np.nan, "df1": np.nan, "df2": np.nan, "p_value": np.nan}
+        return {"k": k, "F": float("nan"), "df1": float("nan"), "df2": float("nan"), "p": float("nan")}
 
-    means = np.array([np.mean(v) for _, v in groups], dtype=float)
-    vars_ = np.array([np.var(v, ddof=1) for _, v in groups], dtype=float)
-    ns = np.array([len(v) for _, v in groups], dtype=float)
+    means = {k: float(np.mean(v)) for k, v in gvals.items()}
+    ns = {k: int(v.size) for k, v in gvals.items()}
+    vars_ = {k: float(np.var(v, ddof=1)) for k, v in gvals.items()}
 
-    vars_ = np.where(vars_ == 0, 1e-12, vars_)
-    w = ns / vars_
+    # weights
+    w = {k: ns[k] / vars_[k] for k in gvals.keys()}
+    w_sum = sum(w.values())
 
-    y_bar_w = np.sum(w * means) / np.sum(w)
-    numerator = np.sum(w * (means - y_bar_w) ** 2) / (k - 1)
+    y_bar = sum(w[k] * means[k] for k in gvals.keys()) / w_sum
 
-    term = np.sum(((1 - (w / np.sum(w))) ** 2) / (ns - 1))
-    denominator = 1 + (2 * (k - 2) / (k**2 - 1)) * term
+    numerator = sum(w[k] * (means[k] - y_bar) ** 2 for k in gvals.keys()) / (k - 1)
 
-    F = numerator / denominator
+    a = sum((1.0 / (ns[k] - 1)) * (1.0 - (w[k] / w_sum)) ** 2 for k in gvals.keys())
     df1 = k - 1
-    df2 = (k**2 - 1) / (3 * term) if term > 0 else np.inf
-    p_value = 1 - stats.f.cdf(F, df1, df2)
+    df2 = (df1 + 1) / (3 * a)
 
-    return {"k": k, "F": F, "df1": df1, "df2": df2, "p_value": p_value}
+    F = numerator / (1.0 + (2 * (df1 - 1) * a))
+    p = float(1.0 - stats.f.cdf(F, df1, df2))
 
-
-def eta_squared_anova(df, value_col, group_col):
-    clean = df[[value_col, group_col]].dropna()
-    if clean.empty:
-        return np.nan
-
-    grand_mean = clean[value_col].mean()
-    ss_between = 0.0
-    ss_total = ((clean[value_col] - grand_mean) ** 2).sum()
-
-    for g, sub in clean.groupby(group_col):
-        ss_between += len(sub) * (sub[value_col].mean() - grand_mean) ** 2
-
-    if ss_total == 0:
-        return np.nan
-
-    return ss_between / ss_total
+    return {"k": k, "F": float(F), "df1": float(df1), "df2": float(df2), "p": p}
 
 
-def kruskal_wallis(df, value_col, group_col):
-    groups = []
-    for g, sub in df.groupby(group_col):
-        vals = sub[value_col].dropna().values
-        if len(vals) >= 1:
-            groups.append(vals)
-
-    if len(groups) < 2:
-        return {"H": np.nan, "p_value": np.nan, "k": len(groups)}
-
-    H, p = stats.kruskal(*groups)
-    return {"H": H, "p_value": p, "k": len(groups)}
-
-
-def epsilon_squared_kruskal(df, value_col, group_col):
-    clean = df[[value_col, group_col]].dropna()
-    n = len(clean)
-    k = clean[group_col].nunique()
-
-    if n == 0 or k < 2:
-        return np.nan
-
-    H, _ = stats.kruskal(*[sub[value_col].values for _, sub in clean.groupby(group_col)])
-    return (H - k + 1) / (n - k) if (n - k) > 0 else np.nan
-
-
-def pairwise_welch_tests(df, value_col, group_col):
-    group_names = [g for g in GROUP_ORDER if g in df[group_col].unique()]
-    results = []
-
-    pvals = []
+def pairwise_welch_ttests_holm(groups: Dict[str, np.ndarray]) -> List[Dict[str, float | str]]:
+    names = sorted(groups.keys())
     pairs = []
+    raw_ps = []
 
-    for i in range(len(group_names)):
-        for j in range(i + 1, len(group_names)):
-            g1 = group_names[i]
-            g2 = group_names[j]
+    for i in range(len(names)):
+        for j in range(i + 1, len(names)):
+            a = groups[names[i]][np.isfinite(groups[names[i]])]
+            b = groups[names[j]][np.isfinite(groups[names[j]])]
 
-            x1 = df.loc[df[group_col] == g1, value_col].dropna().values
-            x2 = df.loc[df[group_col] == g2, value_col].dropna().values
-
-            if len(x1) < 2 or len(x2) < 2:
-                t_stat, p_val = np.nan, np.nan
+            if a.size < 2 or b.size < 2:
+                t_stat, p_val = float("nan"), float("nan")
             else:
-                t_stat, p_val = stats.ttest_ind(x1, x2, equal_var=False, nan_policy='omit')
+                t_stat, p_val = stats.ttest_ind(a, b, equal_var=False, nan_policy="omit")
 
-            pairs.append((g1, g2, t_stat))
-            pvals.append(1.0 if np.isnan(p_val) else p_val)
+            pairs.append({
+                "group_a": names[i],
+                "group_b": names[j],
+                "n_a": int(a.size),
+                "n_b": int(b.size),
+                "mean_a": float(np.mean(a)) if a.size else float("nan"),
+                "mean_b": float(np.mean(b)) if b.size else float("nan"),
+                "t": float(t_stat),
+                "p_raw": float(p_val),
+            })
+            raw_ps.append(p_val)
 
-    adj_pvals = holm_correction(pvals)
+    # Holm correction (simple implementation)
+    m = len(raw_ps)
+    idx_ps = [(idx, p) for idx, p in enumerate(raw_ps) if p == p]  # filter NaN
+    idx_ps.sort(key=lambda t: t[1])
 
-    for (g1, g2, t_stat), p_raw, p_adj in zip(pairs, pvals, adj_pvals):
-        results.append({
-            "group1": g1,
-            "group2": g2,
-            "t_stat": t_stat,
-            "p_raw": p_raw,
-            "p_holm": p_adj,
-        })
+    corrected = [float("nan")] * m
+    prev = 0.0
+    for rank, (idx, p) in enumerate(idx_ps, start=1):
+        corr = min(1.0, (m - rank + 1) * p)
+        corr = max(prev, corr)  # monotone
+        corrected[idx] = corr
+        prev = corr
 
-    return pd.DataFrame(results)
+    for i, c in enumerate(corrected):
+        pairs[i]["p_holm"] = c
+
+    return pairs
 
 
-def pairwise_mannwhitney(df, value_col, group_col):
-    group_names = [g for g in GROUP_ORDER if g in df[group_col].unique()]
-    results = []
+# ----------------------------
+# Main
+# ----------------------------
+def main():
+    parser = argparse.ArgumentParser(description="Analyze hyp2 JSON outputs in-place (files in output/).")
+    parser.add_argument("--output-dir", default="output", help="Folder containing hyp2-config-... JSON files.")
+    parser.add_argument("--seeds", default=None,
+                        help="Comma-separated list of seeds to include (optional), e.g. '0,1,2'. If omitted, include all.")
+    parser.add_argument("--configs", default=None,
+                        help="Config range(s) to include (optional). Examples: '0-199' or '0-49,150-199'. If omitted, include all.")
+    parser.add_argument("--alpha", type=float, default=0.05, help="Significance level for ANOVA post-hoc triggering.")
+    args = parser.parse_args()
 
-    pvals = []
-    pairs = []
+    output_dir = Path(args.output_dir)
+    if not output_dir.exists():
+        raise SystemExit(f"Output dir not found: {output_dir.resolve()}")
 
-    for i in range(len(group_names)):
-        for j in range(i + 1, len(group_names)):
-            g1 = group_names[i]
-            g2 = group_names[j]
+    seed_filter = None
+    if args.seeds:
+        seed_filter = set(int(s.strip()) for s in args.seeds.split(",") if s.strip())
 
-            x1 = df.loc[df[group_col] == g1, value_col].dropna().values
-            x2 = df.loc[df[group_col] == g2, value_col].dropna().values
-
-            if len(x1) < 1 or len(x2) < 1:
-                u_stat, p_val = np.nan, np.nan
+    config_filter = None
+    if args.configs:
+        config_filter = set()
+        parts = [p.strip() for p in args.configs.split(",") if p.strip()]
+        for p in parts:
+            if "-" in p:
+                a, b = p.split("-", 1)
+                a, b = int(a), int(b)
+                lo, hi = min(a, b), max(a, b)
+                for x in range(lo, hi + 1):
+                    config_filter.add(x)
             else:
-                try:
-                    u_stat, p_val = stats.mannwhitneyu(x1, x2, alternative="two-sided")
-                except Exception:
-                    u_stat, p_val = np.nan, np.nan
+                config_filter.add(int(p))
 
-            pairs.append((g1, g2, u_stat))
-            pvals.append(1.0 if np.isnan(p_val) else p_val)
+    run_files = find_run_files(output_dir)
 
-    adj_pvals = holm_correction(pvals)
+    runs = []
+    errors = []
 
-    for (g1, g2, u_stat), p_raw, p_adj in zip(pairs, pvals, adj_pvals):
-        results.append({
-            "group1": g1,
-            "group2": g2,
-            "u_stat": u_stat,
-            "p_raw": p_raw,
-            "p_holm": p_adj,
-        })
-
-    return pd.DataFrame(results)
-
-
-# ============================================================
-# PLOTTING
-# ============================================================
-
-def make_boxplot(df, value_col, title, ylabel, filename):
-    data = []
-    labels = []
-
-    for g in GROUP_ORDER:
-        vals = df.loc[df["distribution_group"] == g, value_col].dropna().values
-        if len(vals) > 0:
-            data.append(vals)
-            labels.append(g)
-
-    if not data:
-        return
-
-    plt.figure(figsize=(10, 6))
-    plt.boxplot(data, labels=labels, showmeans=True)
-    plt.axhline(0, linestyle="--")
-    plt.title(title)
-    plt.ylabel(ylabel)
-    plt.xlabel("Distribution Group")
-    plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_FOLDER, filename), dpi=300)
-    plt.close()
-
-
-def make_histograms_by_group(df, value_col, prefix):
-    for g in GROUP_ORDER:
-        vals = df.loc[df["distribution_group"] == g, value_col].dropna().values
-        if len(vals) == 0:
+    for file_path, x, seed in run_files:
+        if seed_filter is not None and seed not in seed_filter:
+            continue
+        if config_filter is not None and x not in config_filter:
             continue
 
-        plt.figure(figsize=(8, 5))
-        plt.hist(vals, bins=min(15, max(5, len(vals) // 3)))
-        plt.axvline(0, linestyle="--")
-        plt.title(f"{value_col} histogram - {g}")
-        plt.xlabel(value_col)
-        plt.ylabel("Frequency")
-        plt.tight_layout()
-        plt.savefig(os.path.join(OUTPUT_FOLDER, f"{prefix}_{g}.png"), dpi=300)
-        plt.close()
+        group = distribution_group_from_config(x)
+        if group == "unknown":
+            continue
 
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                run_data = json.load(f)
+            metrics = compute_run_metric(run_data)
+            runs.append({
+                "file": str(file_path),
+                "config": x,
+                "seed": seed,
+                "group": group,
+                **metrics,
+            })
+        except Exception as e:
+            errors.append({"file": str(file_path), "config": x, "seed": seed, "error": str(e)})
 
-# ============================================================
-# JSON PARSING
-# ============================================================
+    # Build group arrays
+    group_order = ["random", "misinfo_gt", "equal", "real_gt"]
+    groups_np = {g: np.array([r["D"] for r in runs if r["group"] == g], dtype=float) for g in group_order}
 
-def extract_run_data(json_path):
-    with open(json_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    within = {}
+    for g in group_order:
+        within[g] = {
+            "summary": mean_ci95(groups_np[g]),
+            "t_test_one_sided_mean_gt_0": one_sided_one_sample_ttest_greater_than_zero(groups_np[g]),
+        }
 
-    filename = os.path.basename(json_path)
-    config_num = parse_config_from_filename(filename)
-    if config_num is None:
-        raise ValueError(f"Could not parse config number from filename: {filename}")
+    anova = welchs_anova_oneway(groups_np)
 
-    distribution_group = get_distribution_group(config_num)
+    posthoc = None
+    if anova["p"] == anova["p"] and anova["p"] < args.alpha:
+        posthoc = pairwise_welch_ttests_holm(groups_np)
 
-    static_info = data.get("static_post_information", {})
-    agent_share_data = data.get("agent_share_data", {})
-
-    if not isinstance(agent_share_data, dict):
-        raise ValueError(f"'agent_share_data' is not a dictionary in {filename}")
-
-    regular_info_count = static_info.get("regular_info_count", None)
-    misinformation_count = static_info.get("misinformation_count", None)
-
-    if regular_info_count is None or misinformation_count is None:
-        raise ValueError(f"Missing regular_info_count or misinformation_count in {filename}")
-
-    agent_records = []
-    raw_diffs = []
-    norm_diffs = []
-
-    # Per agent-class accumulators for run-level subgroup summaries
-    class_values = {}
-
-    for agent_name, agent_info in agent_share_data.items():
-        agent_class = agent_info.get("agent_classification", "unknown")
-        r = agent_info.get("regular_information_shares", 0)
-        m = agent_info.get("misinformation_shares", 0)
-
-        raw_diff = m - r
-        norm_diff = safe_div(m, misinformation_count) - safe_div(r, regular_info_count)
-
-        raw_diffs.append(raw_diff)
-        if np.isfinite(norm_diff):
-            norm_diffs.append(norm_diff)
-
-        class_values.setdefault(agent_class, []).append(norm_diff)
-
-        agent_records.append({
-            "filename": filename,
-            "config_num": config_num,
-            "distribution_group": distribution_group,
-            "agent_name": agent_name,
-            "agent_classification": agent_class,
-            "regular_info_count": regular_info_count,
-            "misinformation_count": misinformation_count,
-            "regular_information_shares": r,
-            "misinformation_shares": m,
-            "raw_diff": raw_diff,
-            "norm_diff": norm_diff,
-        })
-
-    raw_diffs = np.array(raw_diffs, dtype=float)
-    norm_diffs = np.array(norm_diffs, dtype=float)
-
-    run_record = {
-        "filename": filename,
-        "config_num": config_num,
-        "distribution_group": distribution_group,
-        "regular_info_count": regular_info_count,
-        "misinformation_count": misinformation_count,
-        "total_posts": (regular_info_count or 0) + (misinformation_count or 0),
-        "num_agents": len(agent_records),
-
-        # Raw metrics (secondary)
-        "run_mean_raw_diff": np.mean(raw_diffs) if len(raw_diffs) > 0 else np.nan,
-        "run_median_raw_diff": np.median(raw_diffs) if len(raw_diffs) > 0 else np.nan,
-        "run_pct_positive_raw": np.mean(raw_diffs > 0) if len(raw_diffs) > 0 else np.nan,
-        "run_std_raw_diff": np.std(raw_diffs, ddof=1) if len(raw_diffs) > 1 else np.nan,
-
-        # Normalized metrics (PRIMARY)
-        "run_mean_norm_diff": np.mean(norm_diffs) if len(norm_diffs) > 0 else np.nan,
-        "run_median_norm_diff": np.median(norm_diffs) if len(norm_diffs) > 0 else np.nan,
-        "run_pct_positive_norm": np.mean(norm_diffs > 0) if len(norm_diffs) > 0 else np.nan,
-        "run_std_norm_diff": np.std(norm_diffs, ddof=1) if len(norm_diffs) > 1 else np.nan,
+    results = {
+        "input": {
+            "output_dir": str(output_dir),
+            "seeds_filter": sorted(list(seed_filter)) if seed_filter is not None else None,
+            "configs_filter": sorted(list(config_filter)) if config_filter is not None else None,
+            "alpha": args.alpha,
+            "metric": "D = (M_share_total/M_avail) - (R_share_total/R_avail)",
+        },
+        "counts": {
+            "runs_loaded": len(runs),
+            "errors": len(errors),
+            "runs_per_group": {g: int(np.isfinite(groups_np[g]).sum()) for g in group_order},
+        },
+        "within_group": within,
+        "welch_anova": anova,
+        "posthoc_pairwise_welch_ttests_holm": posthoc,
+        "errors": errors,
     }
 
-    # Add per-agent-class run-level summaries (very useful extension)
-    # Example columns:
-    # normal_run_mean_norm_diff, gullible_run_mean_norm_diff, stubborn_run_mean_norm_diff
-    for cls, vals in class_values.items():
-        vals = np.array(vals, dtype=float)
-        vals = vals[np.isfinite(vals)]
+    out_json = Path("analysis_results.json")
+    out_txt = Path("analysis_summary.txt")
 
-        run_record[f"{cls}_run_mean_norm_diff"] = np.mean(vals) if len(vals) > 0 else np.nan
-        run_record[f"{cls}_run_median_norm_diff"] = np.median(vals) if len(vals) > 0 else np.nan
-        run_record[f"{cls}_run_pct_positive_norm"] = np.mean(vals > 0) if len(vals) > 0 else np.nan
-        run_record[f"{cls}_n_agents"] = len(vals)
+    with open(out_json, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2)
 
-    return run_record, agent_records
-
-
-# ============================================================
-# ANALYSIS HELPERS
-# ============================================================
-
-def run_within_group_tests(df, metric_col, metric_label):
-    rows = []
-
-    for g in GROUP_ORDER:
-        sub = df.loc[df["distribution_group"] == g, metric_col].dropna().values
-
-        t_res = one_sample_ttest_greater(sub, popmean=0.0)
-        w_res = wilcoxon_greater_zero(sub)
-
-        rows.append({
-            "metric": metric_label,
-            "distribution_group": g,
-            "n_runs": len(sub),
-            "sample_mean": np.mean(sub) if len(sub) > 0 else np.nan,
-            "sample_median": np.median(sub) if len(sub) > 0 else np.nan,
-            "sample_sd": np.std(sub, ddof=1) if len(sub) > 1 else np.nan,
-            "ttest_t": t_res["t_stat"],
-            "ttest_p_one_tailed": t_res["p_value"],
-            "ttest_cohen_d": t_res["cohen_d"],
-            "wilcoxon_stat": w_res["stat"],
-            "wilcoxon_p_one_tailed": w_res["p_value"],
-        })
-
-    return pd.DataFrame(rows)
-
-
-def run_across_group_tests(df, metric_col, metric_label):
-    welch = welch_anova(df, metric_col, "distribution_group")
-    eta2 = eta_squared_anova(df, metric_col, "distribution_group")
-
-    kw = kruskal_wallis(df, metric_col, "distribution_group")
-    eps2 = epsilon_squared_kruskal(df, metric_col, "distribution_group")
-
-    return pd.DataFrame([{
-        "metric": metric_label,
-        "welch_F": welch["F"],
-        "welch_df1": welch["df1"],
-        "welch_df2": welch["df2"],
-        "welch_p": welch["p_value"],
-        "eta_squared_descriptive": eta2,
-        "kruskal_H": kw["H"],
-        "kruskal_p": kw["p_value"],
-        "epsilon_squared": eps2,
-    }])
-
-
-def write_summary_report(df, primary_within_mean, primary_within_median,
-                         primary_across_mean, primary_across_median,
-                         pairwise_mean, pairwise_median):
-    report_path = os.path.join(OUTPUT_FOLDER, "analysis_summary.txt")
-
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write("HYP2 SIMULATION ANALYSIS SUMMARY\n")
-        f.write("=" * 80 + "\n\n")
-
-        f.write("RUN COUNTS BY DISTRIBUTION GROUP\n")
-        f.write("-" * 80 + "\n")
-        counts = df["distribution_group"].value_counts()
-        for g in GROUP_ORDER:
-            f.write(f"{g}: {counts.get(g, 0)} runs\n")
-        f.write("\n")
-
-        f.write("PRIMARY DESCRIPTIVE SUMMARY (NORMALIZED METRICS)\n")
-        f.write("-" * 80 + "\n")
-        desc = df.groupby("distribution_group")[[
-            "run_mean_norm_diff",
-            "run_median_norm_diff",
-            "run_pct_positive_norm"
-        ]].agg(["mean", "median", "std", "count"])
-        f.write(desc.to_string())
-        f.write("\n\n")
-
-        f.write("WITHIN-GROUP TESTS: RUN MEAN NORMALIZED DIFFERENCE\n")
-        f.write("-" * 80 + "\n")
-        f.write(primary_within_mean.to_string(index=False))
-        f.write("\n\n")
-
-        f.write("WITHIN-GROUP TESTS: RUN MEDIAN NORMALIZED DIFFERENCE\n")
-        f.write("-" * 80 + "\n")
-        f.write(primary_within_median.to_string(index=False))
-        f.write("\n\n")
-
-        f.write("ACROSS-GROUP TESTS: RUN MEAN NORMALIZED DIFFERENCE\n")
-        f.write("-" * 80 + "\n")
-        f.write(primary_across_mean.to_string(index=False))
-        f.write("\n\n")
-
-        f.write("ACROSS-GROUP TESTS: RUN MEDIAN NORMALIZED DIFFERENCE\n")
-        f.write("-" * 80 + "\n")
-        f.write(primary_across_median.to_string(index=False))
-        f.write("\n\n")
-
-        f.write("PAIRWISE POST-HOC (PRACTICAL): WELCH T-TESTS ON RUN MEAN NORMALIZED DIFFERENCE\n")
-        f.write("-" * 80 + "\n")
-        f.write(pairwise_mean.to_string(index=False))
-        f.write("\n\n")
-
-        f.write("PAIRWISE ROBUST COMPARISON (PRACTICAL): MANN-WHITNEY ON RUN MEDIAN NORMALIZED DIFFERENCE\n")
-        f.write("-" * 80 + "\n")
-        f.write(pairwise_median.to_string(index=False))
-        f.write("\n\n")
-
-        f.write("NOTES\n")
-        f.write("-" * 80 + "\n")
-        f.write("Primary metric: norm_diff = (misinformation_shares / misinformation_count) - (regular_information_shares / regular_info_count)\n")
-        f.write("Positive values indicate greater misinformation sharing relative to availability.\n")
-        f.write("Run-level summaries are the inferential unit to avoid pseudo-replication from within-run agent dependence.\n")
-        f.write("Welch's ANOVA is the primary across-group parametric comparison.\n")
-        f.write("Kruskal-Wallis provides a robust nonparametric confirmation.\n")
-        f.write("Pairwise Welch and Mann-Whitney are practical post-hoc approximations.\n")
-
-
-# ============================================================
-# MAIN
-# ============================================================
-
-def main():
-    ensure_output_dir()
-
-    input_path = Path(INPUT_FOLDER)
-    if not input_path.exists():
-        raise FileNotFoundError(f"Input folder not found: {INPUT_FOLDER}")
-
-    json_files = sorted([p for p in input_path.iterdir() if p.is_file() and p.suffix.lower() == ".json"])
-
-    if not json_files:
-        raise FileNotFoundError(f"No .json files found in {INPUT_FOLDER}")
-
-    run_records = []
-    all_agent_records = []
-    skipped = []
-
-    for file_path in json_files:
-        try:
-            run_record, agent_records = extract_run_data(str(file_path))
-
-            if run_record["distribution_group"] == "unknown":
-                skipped.append((file_path.name, "Config number out of expected range"))
-                continue
-
-            run_records.append(run_record)
-            all_agent_records.extend(agent_records)
-
-        except Exception as e:
-            skipped.append((file_path.name, str(e)))
-
-    if not run_records:
-        raise RuntimeError("No valid simulation runs were processed.")
-
-    run_df = pd.DataFrame(run_records)
-    agent_df = pd.DataFrame(all_agent_records)
-
-    # Save raw tables
-    run_df.to_csv(os.path.join(OUTPUT_FOLDER, "run_level_summary.csv"), index=False)
-    agent_df.to_csv(os.path.join(OUTPUT_FOLDER, "agent_level_summary.csv"), index=False)
-
-    if skipped:
-        pd.DataFrame(skipped, columns=["filename", "reason"]).to_csv(
-            os.path.join(OUTPUT_FOLDER, "skipped_files.csv"), index=False
+    lines = []
+    lines.append("Hyp2 analysis summary")
+    lines.append("====================")
+    lines.append(f"Output dir: {output_dir.resolve()}")
+    lines.append(f"Runs loaded: {len(runs)} | Errors: {len(errors)}")
+    lines.append("")
+    lines.append("Metric per run:")
+    lines.append("  D = (M_share_total/M_avail) - (R_share_total/R_avail)")
+    lines.append("  Interpretation: D>0 => misinformation shared more per available post than regular info.")
+    lines.append("")
+    lines.append("Within-group one-sample t-tests (H1: mean(D) > 0)")
+    for g in group_order:
+        summ = within[g]["summary"]
+        tt = within[g]["t_test_one_sided_mean_gt_0"]
+        lines.append(
+            f"- {g:9s} n={summ['n']:<4d} mean={summ['mean']:+.6f} "
+            f"CI95=[{summ['ci95_low']:+.6f}, {summ['ci95_high']:+.6f}] "
+            f"t={tt['t']:+.4f} p(one-sided)={tt['p_one_sided']:.6g}"
         )
 
-    # ========================================================
-    # PRIMARY ANALYSIS (NORMALIZED)
-    # ========================================================
+    lines.append("")
+    lines.append("Across-group Welch ANOVA on D")
+    lines.append(f"- k={anova['k']} F={anova['F']:.6f} df1={anova['df1']} df2={anova['df2']:.3f} p={anova['p']:.6g}")
 
-    # Within-group
-    within_mean_norm = run_within_group_tests(run_df, "run_mean_norm_diff", "run_mean_norm_diff")
-    within_median_norm = run_within_group_tests(run_df, "run_median_norm_diff", "run_median_norm_diff")
+    if posthoc is not None:
+        lines.append("")
+        lines.append("Post-hoc pairwise Welch t-tests (two-sided) with Holm correction")
+        for row in posthoc:
+            lines.append(
+                f"- {row['group_a']} vs {row['group_b']}: "
+                f"mean_a={row['mean_a']:+.6f} mean_b={row['mean_b']:+.6f} "
+                f"t={row['t']:+.4f} p_raw={row['p_raw']:.6g} p_holm={row['p_holm']:.6g}"
+            )
 
-    within_mean_norm.to_csv(os.path.join(OUTPUT_FOLDER, "within_group_run_mean_norm_diff.csv"), index=False)
-    within_median_norm.to_csv(os.path.join(OUTPUT_FOLDER, "within_group_run_median_norm_diff.csv"), index=False)
+    if errors:
+        lines.append("")
+        lines.append("Errors (first 20 shown):")
+        for e in errors[:20]:
+            lines.append(f"- {e['file']}: {e['error']}")
 
-    # Across-group
-    across_mean_norm = run_across_group_tests(run_df, "run_mean_norm_diff", "run_mean_norm_diff")
-    across_median_norm = run_across_group_tests(run_df, "run_median_norm_diff", "run_median_norm_diff")
+    with open(out_txt, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
 
-    across_mean_norm.to_csv(os.path.join(OUTPUT_FOLDER, "across_group_run_mean_norm_diff.csv"), index=False)
-    across_median_norm.to_csv(os.path.join(OUTPUT_FOLDER, "across_group_run_median_norm_diff.csv"), index=False)
-
-    # Pairwise
-    pairwise_mean_norm = pairwise_welch_tests(run_df, "run_mean_norm_diff", "distribution_group")
-    pairwise_median_norm = pairwise_mannwhitney(run_df, "run_median_norm_diff", "distribution_group")
-
-    pairwise_mean_norm.to_csv(os.path.join(OUTPUT_FOLDER, "pairwise_welch_run_mean_norm_diff.csv"), index=False)
-    pairwise_median_norm.to_csv(os.path.join(OUTPUT_FOLDER, "pairwise_mannwhitney_run_median_norm_diff.csv"), index=False)
-
-    # ========================================================
-    # SECONDARY ANALYSIS (RAW)
-    # ========================================================
-    within_mean_raw = run_within_group_tests(run_df, "run_mean_raw_diff", "run_mean_raw_diff")
-    within_median_raw = run_within_group_tests(run_df, "run_median_raw_diff", "run_median_raw_diff")
-
-    across_mean_raw = run_across_group_tests(run_df, "run_mean_raw_diff", "run_mean_raw_diff")
-    across_median_raw = run_across_group_tests(run_df, "run_median_raw_diff", "run_median_raw_diff")
-
-    within_mean_raw.to_csv(os.path.join(OUTPUT_FOLDER, "within_group_run_mean_raw_diff.csv"), index=False)
-    within_median_raw.to_csv(os.path.join(OUTPUT_FOLDER, "within_group_run_median_raw_diff.csv"), index=False)
-    across_mean_raw.to_csv(os.path.join(OUTPUT_FOLDER, "across_group_run_mean_raw_diff.csv"), index=False)
-    across_median_raw.to_csv(os.path.join(OUTPUT_FOLDER, "across_group_run_median_raw_diff.csv"), index=False)
-
-    # ========================================================
-    # OPTIONAL: AGENT-CLASS DESCRIPTIVE SUMMARIES
-    # ========================================================
-    if "agent_classification" in agent_df.columns:
-        class_desc = (
-            agent_df.groupby(["distribution_group", "agent_classification"])["norm_diff"]
-            .agg(["mean", "median", "std", "count"])
-            .reset_index()
-        )
-        class_desc.to_csv(os.path.join(OUTPUT_FOLDER, "agent_class_descriptive_norm_diff.csv"), index=False)
-
-    # ========================================================
-    # PLOTS
-    # ========================================================
-    make_boxplot(
-        run_df,
-        "run_mean_norm_diff",
-        "Run Mean of Normalized Sharing Difference by Distribution Group",
-        "Run Mean Normalized Difference",
-        "boxplot_run_mean_norm_diff.png"
-    )
-
-    make_boxplot(
-        run_df,
-        "run_median_norm_diff",
-        "Run Median of Normalized Sharing Difference by Distribution Group",
-        "Run Median Normalized Difference",
-        "boxplot_run_median_norm_diff.png"
-    )
-
-    make_boxplot(
-        run_df,
-        "run_mean_raw_diff",
-        "Run Mean of Raw Sharing Difference by Distribution Group",
-        "Run Mean Raw Difference",
-        "boxplot_run_mean_raw_diff.png"
-    )
-
-    # Histograms for assumption checking
-    make_histograms_by_group(run_df, "run_mean_norm_diff", "hist_run_mean_norm_diff")
-    make_histograms_by_group(run_df, "run_median_norm_diff", "hist_run_median_norm_diff")
-
-    # ========================================================
-    # REPORT
-    # ========================================================
-    write_summary_report(
-        run_df,
-        within_mean_norm,
-        within_median_norm,
-        across_mean_norm,
-        across_median_norm,
-        pairwise_mean_norm,
-        pairwise_median_norm
-    )
-
-    # ========================================================
-    # CONSOLE SUMMARY
-    # ========================================================
-    print("=" * 70)
-    print("ANALYSIS COMPLETE")
-    print("=" * 70)
-    print(f"Valid runs processed: {len(run_df)}")
-    print(f"Agent records processed: {len(agent_df)}")
-    print(f"Results saved to: {OUTPUT_FOLDER}")
-    if skipped:
-        print(f"Skipped files: {len(skipped)} (see skipped_files.csv)")
-    print("\nPrimary output files:")
-    print("- run_level_summary.csv")
-    print("- agent_level_summary.csv")
-    print("- analysis_summary.txt")
-    print("- within_group_run_mean_norm_diff.csv")
-    print("- within_group_run_median_norm_diff.csv")
-    print("- across_group_run_mean_norm_diff.csv")
-    print("- across_group_run_median_norm_diff.csv")
-    print("- pairwise_welch_run_mean_norm_diff.csv")
-    print("- pairwise_mannwhitney_run_median_norm_diff.csv")
-    print("=" * 70)
+    print(f"Wrote: {out_json.resolve()}")
+    print(f"Wrote: {out_txt.resolve()}")
 
 
 if __name__ == "__main__":
