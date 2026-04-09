@@ -1,7 +1,5 @@
 Hyp2 analysis summary
 ====================
-Output dir: /Users/jamesmostajo/Documents/CSCI199/python-class-based-simulation/output
-Runs loaded: 200 | Errors: 0
 
 Metric per run:
   D = (M_share_total/M_avail) - (R_share_total/R_avail)
