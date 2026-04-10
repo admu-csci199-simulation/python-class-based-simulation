@@ -23,7 +23,7 @@ from scipy.optimize import curve_fit
 # ── Config ────────────────────────────────────────────────────────────────────
 OUTPUT_FOLDER   = "output"
 RESULTS_FOLDER  = os.path.join(OUTPUT_FOLDER, "hyp1_analysis")
-FILE_PREFIX     = "hyp1"
+FILE_PREFIX     = "hyp1-config"
 MINUTES         = 24 * 60     # array length per post
 HOURS_THRESHOLD = 3           # "first few hours" benchmark for reporting
 # ─────────────────────────────────────────────────────────────────────────────

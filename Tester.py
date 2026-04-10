@@ -5,7 +5,7 @@ import Constants
 INPUT_FOLDER = "input"
 SCRIPT_NAME = "Main.py"
 SEEDS = list(range(100))
-INPUT_CONFIG_PREFIX = "hyp1"
+INPUT_CONFIG_PREFIX = "hyp1-config"
 
 def main():
     for s in SEEDS:
