@@ -65,7 +65,7 @@ def load_all_files(input_dir: Path, glob: str) -> list[dict]:
     print(f"Found {len(files)} file(s):")
     runs = []
     for f in files:
-        print(f"  {f.name}")
+        # print(f"  {f.name}")
         with open(f) as fh:
             runs.append(json.load(fh))
     return runs
@@ -486,7 +486,7 @@ def plot_all(arrays: dict, records: list[dict], out_dir: Path):
 
 def main():
     parser = argparse.ArgumentParser(description="Virality hypothesis analysis")
-    parser.add_argument("--output_dir", default="analysis_output", help="Where to save results")
+    parser.add_argument("--output_dir", default="analysis", help="Where to save results")
     parser.add_argument("--n_agents",   type=int, default=N_AGENTS_DEFAULT, help="Total agents in simulation")
     parser.add_argument("--input_dir",  default="output", help="Folder containing hyp9-config*.json files")
     args = parser.parse_args()
