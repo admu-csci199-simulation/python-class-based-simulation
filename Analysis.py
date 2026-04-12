@@ -247,7 +247,7 @@ def generate_heatmap(df, out_path):
 def main():
     parser = argparse.ArgumentParser(description="Hyp8 virality analysis: extract, ANOVA, heatmap.")
     parser.add_argument("--data_dir", default="output",  help="Directory containing JSON files")
-    parser.add_argument("--out_dir",  default="results", help="Output directory for results")
+    parser.add_argument("--out_dir",  default="analysis", help="Output directory for results")
     parser.add_argument("--n",        type=int, default=100, help="Total number of test cases (default: 100)")
     parser.add_argument("--p",        type=int, default=10,  help="Test cases per distribution (default: n/10)")
     args = parser.parse_args()
