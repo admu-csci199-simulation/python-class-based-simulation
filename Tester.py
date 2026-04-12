@@ -4,8 +4,8 @@ import Constants
 
 INPUT_FOLDER = "input"
 SCRIPT_NAME = "Main.py"
-SEEDS = list(range(100))
-INPUT_CONFIG_PREFIX = "hyp6"
+SEEDS = list(range(10))
+INPUT_CONFIG_PREFIX = "hyp6-config"
 
 def main():
     for s in SEEDS:

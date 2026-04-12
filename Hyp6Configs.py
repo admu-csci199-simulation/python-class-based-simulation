@@ -54,7 +54,7 @@ def generate_posts():
     interestValue = random.randint(-10, 21)
     postingTime = 0
     misinformation = random.choice([True, False])
-    spawn = True
+    spawn = True if misinformation else False
 
     post = {
             "postID": postID,
