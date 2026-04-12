@@ -310,8 +310,11 @@ def main():
         "errors": errors,
     }
 
-    out_json = Path("analysis_results.json")
-    out_txt = Path("analysis_summary.txt")
+    out_dir = Path("analysis")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    out_json = out_dir / "analysis_results.json"
+    out_txt  = out_dir / "analysis_summary.txt" 
 
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
