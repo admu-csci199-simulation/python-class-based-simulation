@@ -1,17 +1,25 @@
 Hyp2 analysis summary
 ====================
 Output dir: /Users/jamesmostajo/Documents/CSCI199/python-class-based-simulation/output
-Runs loaded: 200 | Errors: 0
+Runs loaded: 6000 | Errors: 0
 
 Metric per run:
   D = (M_share_total/M_avail) - (R_share_total/R_avail)
   Interpretation: D>0 => misinformation shared more per available post than regular info.
 
 Within-group one-sample t-tests (H1: mean(D) > 0)
-- random    n=50   mean=+12.831891 CI95=[+11.793315, +13.870468] t=+24.8288 p(one-sided)=1.02958e-29
-- misinfo_gt n=50   mean=+13.170356 CI95=[+12.220159, +14.120552] t=+27.8541 p(one-sided)=5.30874e-32
-- equal     n=50   mean=+13.283200 CI95=[+12.203775, +14.362625] t=+24.7294 p(one-sided)=1.2355e-29
-- real_gt   n=50   mean=+11.996978 CI95=[+11.174923, +12.819033] t=+29.3275 p(one-sided)=4.88563e-33
+- random    n=1500 mean=+12.201727 CI95=[+12.004937, +12.398517] t=+121.6235 p(one-sided)=0
+- misinfo_gt n=1500 mean=+12.604587 CI95=[+12.433635, +12.775539] t=+144.6284 p(one-sided)=0
+- equal     n=1500 mean=+13.875031 CI95=[+13.708142, +14.041920] t=+163.0818 p(one-sided)=0
+- real_gt   n=1500 mean=+12.482969 CI95=[+12.351915, +12.614023] t=+186.8381 p(one-sided)=0
 
 Across-group Welch ANOVA on D
-- k=4 F=1.456724 df1=3.0 df2=28.881 p=0.246929
+- k=4 F=73.773277 df1=3.0 df2=878.850 p=1.11022e-16
+
+Post-hoc pairwise Welch t-tests (two-sided) with Holm correction
+- equal vs misinfo_gt: mean_a=+13.875031 mean_b=+12.604587 t=+10.4310 p_raw=4.77978e-25 p_holm=1.91191e-24
+- equal vs random: mean_a=+13.875031 mean_b=+12.201727 t=+12.7206 p_raw=4.05556e-36 p_holm=2.02778e-35
+- equal vs real_gt: mean_a=+13.875031 mean_b=+12.482969 t=+12.8683 p_raw=7.14395e-37 p_holm=4.28637e-36
+- misinfo_gt vs random: mean_a=+12.604587 mean_b=+12.201727 t=+3.0315 p_raw=0.00245477 p_holm=0.00736432
+- misinfo_gt vs real_gt: mean_a=+12.604587 mean_b=+12.482969 t=+1.1075 p_raw=0.268179 p_holm=0.268179
+- random vs real_gt: mean_a=+12.201727 mean_b=+12.482969 t=-2.3333 p_raw=0.019709 p_holm=0.039418

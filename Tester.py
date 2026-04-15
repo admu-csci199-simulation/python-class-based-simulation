@@ -1,10 +1,9 @@
 from Random import seed
 import os, sys, subprocess
-import Constants
 
 INPUT_FOLDER = "input"
 SCRIPT_NAME = "Main.py"
-SEEDS = [0]
+SEEDS = list(range(30))
 INPUT_CONFIG_PREFIX = "hyp2"
 
 def main():
