@@ -4,30 +4,30 @@ Response variable: log(total_shares + 1)
 ============================================================
 
 [Post Belief Value]
-  Sum of Squares : 7.7065
+  Sum of Squares : 244.1615
   df             : 8
-  F-statistic    : 1.8395
-  p-value        : 6.5105e-02  (not significant)
+  F-statistic    : 54.3876
+  p-value        : 7.1110e-89  ***
   η² (effect)    : 0.0010  (negligible)
 
 [Agent Distribution]
-  Sum of Squares : 6.4246
+  Sum of Squares : 107.4782
   df             : 9
-  F-statistic    : 1.3631
-  p-value        : 1.9886e-01  (not significant)
-  η² (effect)    : 0.0008  (negligible)
+  F-statistic    : 21.2809
+  p-value        : 2.0502e-36  ***
+  η² (effect)    : 0.0004  (negligible)
 
 [Interaction (Belief × Distribution)]
-  Sum of Squares : 61.0915
+  Sum of Squares : 1472.5786
   df             : 72
-  F-statistic    : 1.6202
-  p-value        : 7.3986e-04  ***
-  η² (effect)    : 0.0080  (negligible)
+  F-statistic    : 36.4468
+  p-value        : 0.0000e+00  ***
+  η² (effect)    : 0.0060  (negligible)
 
 [Residual]
-  Sum of Squares : 3766.3915
-  df             : 7192
-  η² (effect)    : 0.4951  (large)
+  Sum of Squares : 121261.1490
+  df             : 216090
+  η² (effect)    : 0.4963  (large)
 
 ============================================================
 Significance codes: *** p<0.001  ** p<0.01  * p<0.05
