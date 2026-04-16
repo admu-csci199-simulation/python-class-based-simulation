@@ -1,5 +1,8 @@
-two dictionaries: real and misinformation
-
 {
-    post_id: 
+    misinformation: {
+        "post_id": [layer1_count, layer2_count, ...]
+    }
+    regular: {
+        "post_id": [layer1_count, layer2_count, ...]
+    }
 }
