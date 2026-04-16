@@ -14,27 +14,42 @@ OUTPUT_DIR = "output"
 # HELPER FUNCTIONS
 # -----------------------------
 
-def compute_metrics(layers):
-    """
-    layers: list of counts per layer
-    returns: total, depth, breadth, shape_ratio
-    """
+def compute_depth(layers):
+    return np.count_nonzero(layers)
 
+
+def compute_breadth(layers):
+    return max(layers) if len(layers) > 0 else 0
+
+
+def compute_shape_ratio(depth, breadth):
+    return breadth / depth if depth > 0 else 0
+
+
+def compute_branching_factor(layers):
     layers = np.array(layers)
 
+    ratios = []
+    for i in range(len(layers) - 1):
+        if layers[i] > 0:
+            ratios.append(layers[i + 1] / layers[i])
+
+    if len(ratios) == 0:
+        return 0
+
+    return np.mean(ratios)
+
+
+def compute_effective_depth(layers):
+    layers = np.array(layers)
     total = layers.sum()
 
-    # Depth = number of layers with nonzero values
-    nonzero_layers = np.count_nonzero(layers)
-    depth = nonzero_layers
+    if total == 0:
+        return 0
 
-    # Breadth = max layer size
-    breadth = layers.max() if len(layers) > 0 else 0
+    indices = np.arange(len(layers))
+    return np.sum(indices * layers) / total
 
-    # Shape ratio = breadth / depth
-    shape_ratio = breadth / depth if depth > 0 else 0
-
-    return total, depth, breadth, shape_ratio
 
 # -----------------------------
 # PARSE FILES
@@ -51,30 +66,38 @@ for filename in os.listdir(OUTPUT_DIR):
     with open(filepath, "r") as f:
         data = json.load(f)
 
-    # ---- MISINFORMATION POSTS ----
+    # ---- MISINFORMATION ----
     for post_id, layers in data.get("misinformation", {}).items():
-        total, depth, breadth, shape_ratio = compute_metrics(layers)
+        depth = compute_depth(layers)
+        breadth = compute_breadth(layers)
+        shape_ratio = compute_shape_ratio(depth, breadth)
+        branching = compute_branching_factor(layers)
+        eff_depth = compute_effective_depth(layers)
 
         rows.append({
             "type": "misinformation",
-            "post_id": post_id,
-            "total": total,
             "depth": depth,
             "breadth": breadth,
-            "shape_ratio": shape_ratio
+            "shape_ratio": shape_ratio,
+            "branching_factor": branching,
+            "effective_depth": eff_depth
         })
 
-    # ---- REAL POSTS ----
+    # ---- REAL ----
     for post_id, layers in data.get("regular", {}).items():
-        total, depth, breadth, shape_ratio = compute_metrics(layers)
+        depth = compute_depth(layers)
+        breadth = compute_breadth(layers)
+        shape_ratio = compute_shape_ratio(depth, breadth)
+        branching = compute_branching_factor(layers)
+        eff_depth = compute_effective_depth(layers)
 
         rows.append({
             "type": "real",
-            "post_id": post_id,
-            "total": total,
             "depth": depth,
             "breadth": breadth,
-            "shape_ratio": shape_ratio
+            "shape_ratio": shape_ratio,
+            "branching_factor": branching,
+            "effective_depth": eff_depth
         })
 
 # Convert to DataFrame
@@ -87,23 +110,29 @@ df = pd.DataFrame(rows)
 print("\n=== SUMMARY STATISTICS ===\n")
 
 summary = df.groupby("type").agg(
-    mean_total=("total", "mean"),
-    std_total=("total", "std"),
     mean_depth=("depth", "mean"),
     mean_breadth=("breadth", "mean"),
     mean_shape_ratio=("shape_ratio", "mean"),
-    count=("total", "count")
+    mean_branching=("branching_factor", "mean"),
+    mean_effective_depth=("effective_depth", "mean"),
+    count=("depth", "count")
 ).reset_index()
 
 print(summary)
 
 # -----------------------------
-# T-TESTS (MISINFO vs REAL)
+# T-TESTS
 # -----------------------------
 
 print("\n=== T-TEST RESULTS (MISINFO vs REAL) ===\n")
 
-metrics = ["total", "depth", "breadth", "shape_ratio"]
+metrics = [
+    "depth",
+    "breadth",
+    "shape_ratio",
+    "branching_factor",
+    "effective_depth"
+]
 
 ttest_results = []
 
