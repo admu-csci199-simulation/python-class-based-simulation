@@ -24,7 +24,7 @@ from scipy.optimize import curve_fit
 # ── Config ────────────────────────────────────────────────────────────────────
 OUTPUT_FOLDER  = "output"
 RESULTS_FOLDER = os.path.join(OUTPUT_FOLDER, "hyp7_analysis")
-HYP_PREFIX     = "hyp1"
+HYP_PREFIX     = "hyp7"
 MINUTES        = 24 * 60
 # ─────────────────────────────────────────────────────────────────────────────
 
