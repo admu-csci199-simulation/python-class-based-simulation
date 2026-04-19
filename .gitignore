@@ -4,3 +4,4 @@ graphs*/
 input/
 output/
 analysis/features.npy
+.DS_Store
