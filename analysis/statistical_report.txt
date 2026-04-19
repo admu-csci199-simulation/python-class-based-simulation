@@ -11,18 +11,10 @@
   related. Rank-based, so robust to skewed interaction count distributions.
   H0: No monotonic relationship between interest_value and the metric.
 
-  Total Interactions (norm):
-    rho=+0.0100  p=6.8126e-41  ***
-  Peak Interactions (norm):
-    rho=+0.3884  p=0.0000e+00  ***
   Growth Rate:
     rho=+0.4433  p=0.0000e+00  ***
   Decay Rate:
     rho=+nan  p=nan  ns
-  Active Duration (slices):
-    rho=-0.0717  p=0.0000e+00  ***
-  Time to Peak:
-    rho=-0.2887  p=0.0000e+00  ***
 
 ============================================================
   2. LINEAR REGRESSION - Interest Value -> Virality Metrics
@@ -31,24 +23,12 @@
   relationship. Slope = expected change in metric per 1-unit IV increase.
   H0: slope = 0 (interest_value has no linear effect on the metric).
 
-  Total Interactions (norm):
-    slope=2.194412  intercept=1474.675517
-    R2=0.0010  p=0.0000e+00  SE=0.052678  ***
-  Peak Interactions (norm):
-    slope=0.004136  intercept=0.896520
-    R2=0.1969  p=0.0000e+00  SE=0.000006  ***
   Growth Rate:
     slope=0.171974  intercept=12.411311
     R2=0.2878  p=0.0000e+00  SE=0.000202  ***
   Decay Rate:
     slope=0.000000  intercept=0.000000
     R2=nan  p=nan  SE=nan  ns
-  Active Duration (slices):
-    slope=-4.268692  intercept=1640.507198
-    R2=0.0033  p=0.0000e+00  SE=0.055533  ***
-  Time to Peak:
-    slope=-0.198596  intercept=21.349897
-    R2=0.1506  p=0.0000e+00  SE=0.000352  ***
 
 ============================================================
   3. SUMMARY

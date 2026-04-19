@@ -43,7 +43,7 @@ warnings.filterwarnings("ignore")
 # ──────────────────────────────────────────────────────────────
 INPUT_GLOB       = "hyp9-config*.json"
 INPUT_DIR        = Path("output")
-OUTPUT_DIR       = Path("analysis_output")
+OUTPUT_DIR       = Path("analysis")
 N_AGENTS_DEFAULT = 300
 FEATURES_FILE    = "features.npy"   # compact accumulator written during Phase 1
 
@@ -192,13 +192,11 @@ def phase2_analyze(features_path, out_dir, n_agents):
     dur   = F[:, COL["active_duration"]]
 
     # Virality metrics to test against interest_value
+    # Growth rate and decay rate directly capture the rise/fall shape of the
+    # interaction curve, which is the core definition of virality being tested.
     METRICS = {
-        "Total Interactions (norm)": total,
-        "Peak Interactions (norm)":  peak,
-        "Growth Rate":               grow,
-        "Decay Rate":                decay,
-        "Active Duration (slices)":  dur,
-        "Time to Peak":              t2p,
+        "Growth Rate": grow,
+        "Decay Rate":  decay,
     }
 
     report_lines = [
@@ -261,8 +259,8 @@ def phase2_analyze(features_path, out_dir, n_agents):
     # ── PLOTS ────────────────────────────────────────────────────
     print("  Generating plots ...")
 
-    # Fig 1 — Scatter: IV vs each virality metric with regression line
-    fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+    # Fig 1 — Scatter: IV vs growth rate and decay rate with regression line
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     fig.suptitle("Interest Value vs Virality Metrics\n(scatter + linear regression)",
                  fontsize=13, fontweight="bold")
     for ax, (ylabel, yarr) in zip(axes.ravel(), METRICS.items()):
