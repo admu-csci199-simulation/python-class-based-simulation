@@ -1,130 +1,57 @@
 ============================================================
-  VIRALITY HYPOTHESIS ANALYSIS — STATISTICAL REPORT
+  VIRALITY HYPOTHESIS ANALYSIS - STATISTICAL REPORT
   n_agents = 300
-  Total records analysed: 60046
+  Total records analysed: 1799218
 ============================================================
 
 ============================================================
-  1. DESCRIPTIVE STATISTICS BY INTEREST GROUP
+  1. SPEARMAN CORRELATION - Interest Value vs Virality Metrics
 ============================================================
-
-  ── Low (-10–0)  (n=12550) ──
-    Total Interactions (norm):
-      mean=1438.1877  median=1490.0950  std=658.2598  min=0.0000  max=2796.6200
-    Peak Interactions (norm):
-      mean=0.8541  median=0.9133  std=0.1511  min=0.0000  max=0.9833
-    Growth Rate:
-      mean=10.9823  median=11.4261  std=3.8894  min=0.0000  max=19.7074
-    Decay Rate:
-      mean=0.0000  median=0.0000  std=0.0000  min=0.0000  max=0.0000
-    Active Duration (slices):
-      mean=1672.3669  median=1738.0000  std=718.4711  min=0.0000  max=2879.0000
-
-  ── Mid (1–10)  (n=18865) ──
-    Total Interactions (norm):
-      mean=1514.9696  median=1534.9733  std=638.1988  min=0.0000  max=2813.2600
-    Peak Interactions (norm):
-      mean=0.9464  median=0.9600  std=0.0510  min=0.0000  max=0.9833
-    Growth Rate:
-      mean=14.1621  median=14.7807  std=2.5550  min=0.0000  max=20.9179
-    Decay Rate:
-      mean=0.0000  median=0.0000  std=0.0000  min=0.0000  max=0.0000
-    Active Duration (slices):
-      mean=1602.7388  median=1623.0000  std=670.5290  min=0.0000  max=2879.0000
-
-  ── High (11–21)  (n=28631) ──
-    Total Interactions (norm):
-      mean=1495.3082  median=1504.1967  std=623.4693  min=0.0000  max=2813.3800
-    Peak Interactions (norm):
-      mean=0.9600  median=0.9600  std=0.0264  min=0.0000  max=0.9833
-    Growth Rate:
-      mean=15.2097  median=15.1982  std=1.3206  min=0.0000  max=23.4813
-    Decay Rate:
-      mean=0.0000  median=0.0000  std=0.0000  min=0.0000  max=0.0000
-    Active Duration (slices):
-      mean=1561.0414  median=1572.0000  std=648.3893  min=0.0000  max=2879.0000
-
-============================================================
-  2. NORMALITY CHECK (Shapiro-Wilk)
-============================================================
-  (Determines whether parametric or non-parametric tests are primary)
-  Total Interactions (norm): W=0.9886, p=1.0928e-19  → NOT normal (α=0.05)
-  Peak Interactions (norm): W=0.4422, p=1.5634e-82  → NOT normal (α=0.05)
-  Growth Rate: W=0.8262, p=5.7905e-59  → NOT normal (α=0.05)
-  Decay Rate: W=1.0000, p=1.0000e+00  → NORMAL (α=0.05)
-  Active Duration (slices): W=0.9863, p=1.1457e-21  → NOT normal (α=0.05)
-
-============================================================
-  3. CORRELATION — Interest Value vs Virality Metrics
-============================================================
-  Spearman (rank) and Pearson (linear) correlations.
-  Primary test: Spearman (robust to non-normality).
+  Tests whether interest_value and each virality metric are monotonically
+  related. Rank-based, so robust to skewed interaction count distributions.
+  H0: No monotonic relationship between interest_value and the metric.
 
   Total Interactions (norm):
-    Spearman r=+0.0049  p=2.3089e-01  ns
-    Pearson  r=+0.0272  p=2.7009e-11  ***
+    rho=+0.0100  p=6.8126e-41  ***
   Peak Interactions (norm):
-    Spearman r=+0.3972  p=0.0000e+00  ***
-    Pearson  r=+0.4455  p=0.0000e+00  ***
-  Time to Peak:
-    Spearman r=-0.3021  p=0.0000e+00  ***
-    Pearson  r=-0.3932  p=0.0000e+00  ***
+    rho=+0.3884  p=0.0000e+00  ***
   Growth Rate:
-    Spearman r=+0.4492  p=0.0000e+00  ***
-    Pearson  r=+0.5430  p=0.0000e+00  ***
+    rho=+0.4433  p=0.0000e+00  ***
   Decay Rate:
-    Spearman r=+nan  p=nan  ns
-    Pearson  r=+nan  p=nan  ns
-  Active Duration:
-    Spearman r=-0.0796  p=5.4373e-85  ***
-    Pearson  r=-0.0648  p=7.9132e-57  ***
+    rho=+nan  p=nan  ns
+  Active Duration (slices):
+    rho=-0.0717  p=0.0000e+00  ***
+  Time to Peak:
+    rho=-0.2887  p=0.0000e+00  ***
 
 ============================================================
-  4. KRUSKAL-WALLIS TEST — Group Differences in Virality
+  2. LINEAR REGRESSION - Interest Value -> Virality Metrics
 ============================================================
-  Tests whether at least one interest group differs significantly.
-  H0: All groups have the same distribution of virality.
-
-  Kruskal-Wallis H=72.9991, p=1.4075e-16
-  → SIGNIFICANT difference across interest groups (α=0.05)
-
-============================================================
-  5. MANN-WHITNEY U — Pairwise Group Comparisons
-============================================================
-  Bonferroni-corrected α = 0.05 / 3 = 0.0167
-
-  Low (-10–0) vs Mid (1–10):
-    U=111666962.5, p=1.5406e-17  → SIGNIFICANT (Bonferroni α=0.0167)
-  Low (-10–0) vs High (11–21):
-    U=173341758.5, p=1.2755e-08  → SIGNIFICANT (Bonferroni α=0.0167)
-  Mid (1–10) vs High (11–21):
-    U=275940314.5, p=5.8097e-05  → SIGNIFICANT (Bonferroni α=0.0167)
-
-============================================================
-  6. LINEAR REGRESSION — Interest Value → Virality Metrics
-============================================================
-  OLS regression with significance of slope.
+  Quantifies direction, magnitude, and goodness-of-fit of the linear
+  relationship. Slope = expected change in metric per 1-unit IV increase.
+  H0: slope = 0 (interest_value has no linear effect on the metric).
 
   Total Interactions (norm):
-    slope=1.916494  intercept=1471.753082
-    R²=0.0007  p=2.7009e-11  SE=0.287620
-    Significance: ***
+    slope=2.194412  intercept=1474.675517
+    R2=0.0010  p=0.0000e+00  SE=0.052678  ***
   Peak Interactions (norm):
-    slope=0.004312  intercept=0.893520
-    R²=0.1985  p=0.0000e+00  SE=0.000035
-    Significance: ***
+    slope=0.004136  intercept=0.896520
+    R2=0.1969  p=0.0000e+00  SE=0.000006  ***
   Growth Rate:
-    slope=0.177033  intercept=12.353375
-    R²=0.2948  p=0.0000e+00  SE=0.001117
-    Significance: ***
+    slope=0.171974  intercept=12.411311
+    R2=0.2878  p=0.0000e+00  SE=0.000202  ***
+  Decay Rate:
+    slope=0.000000  intercept=0.000000
+    R2=nan  p=nan  SE=nan  ns
+  Active Duration (slices):
+    slope=-4.268692  intercept=1640.507198
+    R2=0.0033  p=0.0000e+00  SE=0.055533  ***
+  Time to Peak:
+    slope=-0.198596  intercept=21.349897
+    R2=0.1506  p=0.0000e+00  SE=0.000352  ***
 
 ============================================================
-  7. SUMMARY & INTERPRETATION
+  3. SUMMARY
 ============================================================
-  Significance codes:  *** p<0.001  ** p<0.01  * p<0.05  ns=not significant
-
-  The central hypothesis is that interest_value positively correlates
-  with post virality (total interactions, peak, growth rate).
-
-  Key findings are reported in sections 3–6 above.
-  Refer to the generated plots for visual confirmation.
+  Significance codes: *** p<0.001  ** p<0.01  * p<0.05  ns=not significant
+  Refer to generated plots for visual confirmation.
