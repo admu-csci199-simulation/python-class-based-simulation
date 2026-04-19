@@ -1,36 +1,77 @@
 ============================================================
 TWO-WAY ANOVA RESULTS
-Response variable: log(total_shares + 1)
+Response variable : sqrt(Growth Rate)
+Total observations: 215400
+Seeds included    : [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5), np.int64(6), np.int64(7), np.int64(8), np.int64(9), np.int64(10), np.int64(11), np.int64(12), np.int64(13), np.int64(14), np.int64(15), np.int64(16), np.int64(17), np.int64(18), np.int64(19), np.int64(20), np.int64(21), np.int64(22), np.int64(23), np.int64(24), np.int64(25), np.int64(26), np.int64(27), np.int64(28), np.int64(29)]
 ============================================================
 
 [Post Belief Value]
-  Sum of Squares : 244.1615
+  Sum of Squares : 14433.7397
   df             : 8
-  F-statistic    : 54.3876
-  p-value        : 7.1110e-89  ***
-  η² (effect)    : 0.0010  (negligible)
+  F-statistic    : 1470.1073
+  p-value        : 0.0000e+00  ***
+  eta2 (effect)  : 0.0257  (small)
 
 [Agent Distribution]
-  Sum of Squares : 107.4782
+  Sum of Squares : 920.7908
   df             : 9
-  F-statistic    : 21.2809
-  p-value        : 2.0502e-36  ***
-  η² (effect)    : 0.0004  (negligible)
+  F-statistic    : 83.3640
+  p-value        : 2.0214e-155  ***
+  eta2 (effect)  : 0.0016  (negligible)
 
-[Interaction (Belief × Distribution)]
-  Sum of Squares : 1472.5786
+[Interaction (Belief x Distribution)]
+  Sum of Squares : 16842.3085
   df             : 72
-  F-statistic    : 36.4468
+  F-statistic    : 190.6028
   p-value        : 0.0000e+00  ***
-  η² (effect)    : 0.0060  (negligible)
+  eta2 (effect)  : 0.0300  (small)
 
 [Residual]
-  Sum of Squares : 121261.1490
-  df             : 216090
-  η² (effect)    : 0.4963  (large)
+  Sum of Squares : 264243.3470
+  df             : 215310
+  eta2 (effect)  : 0.4713  (large)
 
 ============================================================
 Significance codes: *** p<0.001  ** p<0.01  * p<0.05
-Effect size (η²):   <0.01 negligible | 0.01-0.06 small |
+Effect size (eta2): <0.01 negligible | 0.01-0.06 small |
+                    0.06-0.14 medium  | >0.14 large
+============================================================
+
+============================================================
+TWO-WAY ANOVA RESULTS
+Response variable : sqrt(Decay Rate)
+Total observations: 215400
+Seeds included    : [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5), np.int64(6), np.int64(7), np.int64(8), np.int64(9), np.int64(10), np.int64(11), np.int64(12), np.int64(13), np.int64(14), np.int64(15), np.int64(16), np.int64(17), np.int64(18), np.int64(19), np.int64(20), np.int64(21), np.int64(22), np.int64(23), np.int64(24), np.int64(25), np.int64(26), np.int64(27), np.int64(28), np.int64(29)]
+============================================================
+
+[Post Belief Value]
+  Sum of Squares : 20069.2765
+  df             : 8
+  F-statistic    : 1209.0277
+  p-value        : 0.0000e+00  ***
+  eta2 (effect)  : 0.0215  (small)
+
+[Agent Distribution]
+  Sum of Squares : 1208.9117
+  df             : 9
+  F-statistic    : 64.7361
+  p-value        : 1.6452e-119  ***
+  eta2 (effect)  : 0.0013  (negligible)
+
+[Interaction (Belief x Distribution)]
+  Sum of Squares : 17406.9427
+  df             : 72
+  F-statistic    : 116.5157
+  p-value        : 0.0000e+00  ***
+  eta2 (effect)  : 0.0187  (small)
+
+[Residual]
+  Sum of Squares : 446755.2655
+  df             : 215310
+  eta2 (effect)  : 0.4793  (large)
+
+============================================================
+Significance codes: *** p<0.001  ** p<0.01  * p<0.05
+Effect size (eta2): <0.01 negligible | 0.01-0.06 small |
                     0.06-0.14 medium  | >0.14 large
 ============================================================
