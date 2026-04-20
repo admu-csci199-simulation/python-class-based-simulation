@@ -1,679 +1,665 @@
 """
-hyp12Analysis.py  (labelled Hyp12 per project convention)
----------------------------------------------------------
-Statistical analysis for Hypothesis 2:
-  "Two posts of different beliefs compete for interactions."
+Analysis: Competing Beliefs Hypothesis (Hypothesis 12)
+=======================================================
+Two posts of opposing beliefs compete for interactions in a balanced network.
 
-Competition is real if:
-  (a) the two posts share a meaningful audience (Jaccard overlap > 0), AND
-  (b) one post gaining interactions correlates with the other losing them
-      (negative cross-correlation = temporal suppression).
+Expected file layout (relative to this script):
+  output/  hyp12-config-{config_num}s-{seed_num}.json  — simulationData for each run
 
-If both posts only reach agents from their own ideological camp, they are
-spreading through separate echo chambers — not competing.
-
-Expected output JSON format (produced by the modified Main.py):
-  {
-    "<postID>": {
-      "isMisinformation" : bool,
-      "beliefValue"      : int,
-      "interactions"     : [count per minute delta, ...],   // length = MINUTES
-      "interactionsByBeliefCamp": {
-        "red":      [...],
-        "centrist": [...],
-        "blue":     [...]
-      },
-      "agentsReached": [agent_id, ...]
-    },
-    ...
-  }
-
-Output filenames follow Tester.py's pattern:
-  hyp12-config-{GROUP}-{index}s-{seed}.json
-
-Analyses:
-  1. Audience overlap    — Jaccard similarity of agentsReached sets
-  2. Winner analysis     — which post got more total interactions, and why
-  3. Camp segregation    — are the two posts drawing from the same agent pool?
-  4. Centrist contest    — centrist agents are the swing vote; who wins them?
-  5. Temporal suppression— cross-correlation of the two interaction curves
-  6. Per-group summaries — all metrics broken down by config group (A–E)
-  7. Statistical tests   — Wilcoxon signed-rank on Jaccard; binomial on win rate
+Run:
+  python hyp12_analysis.py
 """
 
-import os, json, sys, re
-from collections import defaultdict
-
+import json
+import os
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-from scipy import stats
-from scipy.signal import correlate
+import matplotlib.ticker as mticker
+from collections import defaultdict
 
-# ── Config ────────────────────────────────────────────────────────────────────
-OUTPUT_FOLDER  = "output"
-RESULTS_FOLDER = os.path.join(OUTPUT_FOLDER, "hyp12_analysis")
-HYP_PREFIX     = "hyp12"
-MINUTES        = 24 * 60
-MIN_TOTAL      = 3          # skip configs where both posts have negligible reach
-GROUPS         = list("ABCDE")
+# ─────────────────────────────────────────────────────────────────────────────
+#  CONSTANTS
 # ─────────────────────────────────────────────────────────────────────────────
 
+OUTPUT_DIR  = "output"
+PLOTS_DIR   = "plots"
+NUM_CONFIGS = 100
+NUM_SEEDS   = 100
 
-# ══════════════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────────────────────────────────────
+#  CONFIG
+# ─────────────────────────────────────────────────────────────────────────────
+
+SMOOTHING_WINDOW = 30   # minutes; rolling window for the interaction-rate curves
+
+CAMP_COLOURS = {
+    "post_0_red":  "#d62728",   # post 0 is the red-leaning post
+    "post_1_blue": "#1f77b4",   # post 1 is the blue-leaning post
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  DATA LOADING
-# ══════════════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────────────────────────────────────
 
-def parse_filename(fname: str):
+def load_runs(output_dir, num_configs, num_seeds):
     """
-    Extract (group, config_index, seed) from
-    'hyp12-config-{GROUP}-{index}s-{seed}.json'
-    Returns None if the pattern doesn't match.
+    Load simulationData from output files.
+    Also reads Metadata embedded in the same output file if present,
+    or falls back to defaults.
+    Returns a list of dicts, one per run that loaded cleanly.
     """
-    m = re.match(r"hyp12-config-([A-Z])-(\d+)s-(\d+)\.json", fname)
-    if not m:
-        return None
-    return m.group(1), int(m.group(2)), int(m.group(3))
+    runs = []
+    for config_num in range(num_configs):
+        for seed_num in range(num_seeds):
+            output_path = os.path.join(output_dir, f"hyp12-config-{config_num}s-{seed_num}.json")
+
+            if not os.path.exists(output_path):
+                continue
+
+            with open(output_path) as f:
+                sim = json.load(f)
+
+            meta = sim.get("Metadata", {})
+
+            # simulationData stores postID as string keys after json round-trip
+            posts = sim.get("posts", {})
+            if "0" not in posts or "1" not in posts:
+                continue
+
+            runs.append({
+                "run_id": f"{config_num}s{seed_num}",
+            # ── metadata knobs ──
+            "red_belief":      meta.get("red_belief",      0),
+            "blue_belief":     meta.get("blue_belief",     0),
+            "polarity_gap":    meta.get("polarity_gap",    0),
+            "belief_symmetry": meta.get("belief_symmetry", False),
+            "red_interest":    meta.get("red_interest",    0),
+            "blue_interest":   meta.get("blue_interest",   0),
+            "interest_delta":  meta.get("interest_delta",  0),
+            "time_offset":     meta.get("time_offset",     0),
+            "is_misinfo":      meta.get("is_misinfo",      False),
+            # ── simulation output ──
+            "p0_interactions_over_time": posts["0"]["interactions_over_time"],
+            "p1_interactions_over_time": posts["1"]["interactions_over_time"],
+            "p0_total":                  posts["0"]["total_interactions"],
+            "p1_total":                  posts["1"]["total_interactions"],
+            "p0_by_camp":                posts["0"]["interactions_by_belief_camp"],
+            "p1_by_camp":                posts["1"]["interactions_by_belief_camp"],
+            "contested":                 sim.get("contested_agents", {}),
+        })
+
+    return runs
 
 
-def load_all(output_folder: str, prefix: str) -> dict:
-    """
-    Load and average all output files.
+# ─────────────────────────────────────────────────────────────────────────────
+#  DERIVED METRICS
+# ─────────────────────────────────────────────────────────────────────────────
 
-    Returns a nested dict:
-      { group: { config_index: averaged_entry } }
-
-    averaged_entry = {
-        post0: { "isMisinformation", "beliefValue",
-                 "interactions"      : np.ndarray,
-                 "interactionsByBeliefCamp": { camp: np.ndarray },
-                 "agentsReached"     : set  },
-        post1: { ... }
-    }
-    """
-    # Accumulator: group -> config_idx -> pid -> { arrays, sets, meta, runs }
-    accum = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {
-        "isMisinformation": None,
-        "beliefValue"     : None,
-        "interactions"    : np.zeros(MINUTES),
-        "interactionsByBeliefCamp": {
-            "red"     : np.zeros(MINUTES),
-            "centrist": np.zeros(MINUTES),
-            "blue"    : np.zeros(MINUTES),
-        },
-        "agentsReached": set(),
-        "runs"          : 0,
-    })))
-
-    files_loaded = 0
-    for fname in sorted(os.listdir(output_folder)):
-        if not fname.startswith(prefix):
-            continue
-        parsed = parse_filename(fname)
-        if parsed is None:
-            continue
-        group, cfg_idx, seed = parsed
-
-        with open(os.path.join(output_folder, fname)) as f:
-            data = json.load(f)
-
-        for pid_str, entry in data.items():
-            pid = int(pid_str)
-            rec = accum[group][cfg_idx][pid]
-
-            rec["isMisinformation"] = entry["isMisinformation"]
-            rec["beliefValue"]      = entry["beliefValue"]
-
-            arr = np.array(entry["interactions"][:MINUTES], dtype=np.float64)
-            if len(arr) < MINUTES:
-                arr = np.pad(arr, (0, MINUTES - len(arr)))
-            rec["interactions"] += arr
-
-            for camp in ("red", "centrist", "blue"):
-                camp_arr = np.array(
-                    entry["interactionsByBeliefCamp"][camp][:MINUTES], dtype=np.float64)
-                if len(camp_arr) < MINUTES:
-                    camp_arr = np.pad(camp_arr, (0, MINUTES - len(camp_arr)))
-                rec["interactionsByBeliefCamp"][camp] += camp_arr
-
-            rec["agentsReached"].update(entry["agentsReached"])
-            rec["runs"] += 1
-
-        files_loaded += 1
-
-    if not files_loaded:
-        sys.exit(f"[ERROR] No files found in '{output_folder}' with prefix '{prefix}'.")
-    print(f"[INFO] Loaded {files_loaded} output file(s).")
-
-    # Average interaction arrays across runs; keep agentsReached as union set
-    result = {}
-    for group, cfgs in accum.items():
-        result[group] = {}
-        for cfg_idx, posts in cfgs.items():
-            result[group][cfg_idx] = {}
-            for pid, rec in posts.items():
-                n = max(rec["runs"], 1)
-                result[group][cfg_idx][pid] = {
-                    "isMisinformation": rec["isMisinformation"],
-                    "beliefValue"     : rec["beliefValue"],
-                    "interactions"    : rec["interactions"] / n,
-                    "interactionsByBeliefCamp": {
-                        c: rec["interactionsByBeliefCamp"][c] / n
-                        for c in ("red", "centrist", "blue")
-                    },
-                    "agentsReached"   : rec["agentsReached"],  # union across seeds
-                }
-
-    total_configs = sum(len(v) for v in result.values())
-    print(f"[INFO] Groups loaded: { {g: len(v) for g, v in result.items()} }")
-    print(f"[INFO] Total configs : {total_configs}")
+def rolling_sum(arr, window):
+    """Simple rolling window sum over a 1-D list."""
+    arr = np.array(arr, dtype=float)
+    result = np.convolve(arr, np.ones(window), mode="same")
     return result
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  PER-CONFIG METRICS
-# ══════════════════════════════════════════════════════════════════════════════
-
-def jaccard(set_a: set, set_b: set) -> float:
-    """Jaccard similarity: |A∩B| / |A∪B|. Returns 0 if both empty."""
-    union = set_a | set_b
-    if not union:
-        return 0.0
-    return len(set_a & set_b) / len(union)
-
-
-def camp_fractions(post_rec: dict) -> dict[str, float]:
-    """Fraction of total interactions that came from each belief camp."""
-    total = sum(
-        post_rec["interactionsByBeliefCamp"][c].sum()
-        for c in ("red", "centrist", "blue")
-    )
-    if total == 0:
-        return {"red": 0.0, "centrist": 0.0, "blue": 0.0}
-    return {
-        c: post_rec["interactionsByBeliefCamp"][c].sum() / total
-        for c in ("red", "centrist", "blue")
-    }
-
-
-def centrist_share(post_rec: dict, total_centrist: float) -> float:
-    """Fraction of ALL centrist interactions in this config that went to this post."""
-    if total_centrist == 0:
-        return 0.0
-    return post_rec["interactionsByBeliefCamp"]["centrist"].sum() / total_centrist
-
-
-def peak_cross_correlation(curve0: np.ndarray, curve1: np.ndarray):
+def winner(run):
     """
-    Normalised cross-correlation of the two interaction time-series.
-    Returns (peak_correlation, lag_at_peak).
-    A negative peak_correlation means the two curves are anti-correlated
-    (when one rises, the other tends to fall) → evidence of suppression.
-    A near-zero value means the two curves are independent.
+    Returns 'post_0', 'post_1', or 'tie' based on total_interactions.
     """
-    # Use only the portion where at least one curve is nonzero
-    active = (curve0 + curve1) > 0
-    if active.sum() < 4:
-        return float("nan"), 0
-
-    c0 = curve0[active] - curve0[active].mean()
-    c1 = curve1[active] - curve1[active].mean()
-
-    norm = np.sqrt((c0 ** 2).sum() * (c1 ** 2).sum())
-    if norm == 0:
-        return 0.0, 0
-
-    xcorr  = correlate(c0, c1, mode="full") / norm
-    lags   = np.arange(-(len(c0) - 1), len(c0))
-    peak_idx = int(np.argmax(np.abs(xcorr)))
-    return float(xcorr[peak_idx]), int(lags[peak_idx])
+    if run["p0_total"] > run["p1_total"]:
+        return "post_0"
+    elif run["p1_total"] > run["p0_total"]:
+        return "post_1"
+    return "tie"
 
 
-def compute_pair_metrics(cfg_posts: dict) -> dict | None:
+def contested_winner(run):
     """
-    Compute all competition metrics for one config (one pair of posts).
-    Returns None if the config doesn't have exactly 2 posts or both are too small.
+    Winner among contested agents only (saw both posts, had to choose).
+    Returns 'post_0', 'post_1', 'tie', or 'no_contest' if no data.
     """
-    pids = sorted(cfg_posts.keys())
-    if len(pids) != 2:
-        return None
-
-    p0, p1 = cfg_posts[pids[0]], cfg_posts[pids[1]]
-
-    total0 = p0["interactions"].sum()
-    total1 = p1["interactions"].sum()
-
-    if total0 + total1 < MIN_TOTAL:
-        return None
-
-    # Jaccard
-    jac = jaccard(p0["agentsReached"], p1["agentsReached"])
-
-    # Winner
-    winner = 0 if total0 >= total1 else 1
-
-    # Camp fractions per post
-    cf0 = camp_fractions(p0)
-    cf1 = camp_fractions(p1)
-
-    # Centrist contest
-    total_centrist = (
-        p0["interactionsByBeliefCamp"]["centrist"].sum() +
-        p1["interactionsByBeliefCamp"]["centrist"].sum()
-    )
-    centrist0 = centrist_share(p0, total_centrist)
-    centrist1 = centrist_share(p1, total_centrist)
-
-    # Cross-correlation
-    xcorr_peak, xcorr_lag = peak_cross_correlation(
-        p0["interactions"], p1["interactions"])
-
-    # Belief distance between the two posts
-    belief_distance = abs(p0["beliefValue"] - p1["beliefValue"])
-
-    return {
-        "postID0"         : pids[0],
-        "postID1"         : pids[1],
-        "beliefValue0"    : p0["beliefValue"],
-        "beliefValue1"    : p1["beliefValue"],
-        "beliefDistance"  : belief_distance,
-        "isMisinfo0"      : p0["isMisinformation"],
-        "isMisinfo1"      : p1["isMisinformation"],
-        "total0"          : total0,
-        "total1"          : total1,
-        "winner"          : winner,                 # 0 or 1
-        "jaccard"         : jac,
-        "overlap_count"   : len(p0["agentsReached"] & p1["agentsReached"]),
-        "camp_fractions0" : cf0,
-        "camp_fractions1" : cf1,
-        "centrist_share0" : centrist0,
-        "centrist_share1" : centrist1,
-        "xcorr_peak"      : xcorr_peak,
-        "xcorr_lag"       : xcorr_lag,
-        "curves"          : (p0["interactions"], p1["interactions"]),  # for plotting
-    }
+    c = run["contested"]
+    c0 = c.get("chose_post_0", 0)
+    c1 = c.get("chose_post_1", 0)
+    if c0 == 0 and c1 == 0:
+        return "no_contest"
+    if c0 > c1:
+        return "post_0"
+    if c1 > c0:
+        return "post_1"
+    return "tie"
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  STATISTICAL TESTS
-# ══════════════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────────────────────────────────────
+#  FIGURE 1 — Interaction Race (cumulative curves, all runs)
+# ─────────────────────────────────────────────────────────────────────────────
 
-def wilcoxon_greater_than_zero(values: list[float], label: str):
+def plot_interaction_race(runs, plots_dir):
     """
-    Wilcoxon signed-rank test: are values significantly > 0?
-    (one-sample, testing against median=0)
+    For each run, plot the CUMULATIVE interaction curve of post 0 (red) and
+    post 1 (blue) on the shared absolute simulation timeline.
+
+    All runs are overlaid with low alpha so the envelope of typical behaviour
+    is visible. The mean across runs is drawn thick on top.
     """
-    vals = [v for v in values if not np.isnan(v)]
-    if len(vals) < 4:
-        return
-    stat, p = stats.wilcoxon(vals, alternative="greater")
-    sig = "✓ significant" if p < 0.05 else "✗ not significant"
-    print(f"    Wilcoxon (>{0}) — stat={stat:.1f}  p={p:.3e}  {sig}  "
-          f"(median={np.median(vals):.4f}, n={len(vals)})")
+    T = len(runs[0]["p0_interactions_over_time"])
+    time_axis = np.arange(T) / 60  # convert minutes → hours
 
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5), sharey=False)
 
-def binomial_win_rate(wins_post0: int, total: int, label: str):
-    """
-    Binomial test: is post 0's win rate significantly different from 50%?
-    (tests whether competition has a systematic winner)
-    """
-    if total == 0:
-        return
-    p = stats.binomtest(wins_post0, total, p=0.5, alternative="two-sided").pvalue
-    rate = wins_post0 / total
-    sig = "✓ significant" if p < 0.05 else "✗ not significant"
-    print(f"    Binomial win-rate test — post0 wins {wins_post0}/{total} "
-          f"({100*rate:.1f}%)  p={p:.3e}  {sig}")
+    # ── left panel: every individual run (faint) + mean (bold) ──
+    ax = axes[0]
+    p0_curves, p1_curves = [], []
 
+    for run in runs:
+        p0_cum = np.cumsum(run["p0_interactions_over_time"])
+        p1_cum = np.cumsum(run["p1_interactions_over_time"])
+        p0_curves.append(p0_cum)
+        p1_curves.append(p1_cum)
+        ax.plot(time_axis, p0_cum, color=CAMP_COLOURS["post_0_red"],  alpha=0.08, linewidth=0.7)
+        ax.plot(time_axis, p1_cum, color=CAMP_COLOURS["post_1_blue"], alpha=0.08, linewidth=0.7)
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  REPORTING
-# ══════════════════════════════════════════════════════════════════════════════
+    mean_p0 = np.mean(p0_curves, axis=0)
+    mean_p1 = np.mean(p1_curves, axis=0)
+    ax.plot(time_axis, mean_p0, color=CAMP_COLOURS["post_0_red"],  linewidth=2.2, label="Post 0 (red-leaning) — mean")
+    ax.plot(time_axis, mean_p1, color=CAMP_COLOURS["post_1_blue"], linewidth=2.2, label="Post 1 (blue-leaning) — mean")
 
-GROUP_DESCRIPTIONS = {
-    "A": "Max opposition, balanced pop, simultaneous  (baseline)",
-    "B": "Moderate opposition, balanced pop, simultaneous",
-    "C": "Max opposition, red-heavy pop, simultaneous",
-    "D": "Max opposition, balanced pop, staggered posting",
-    "E": "Max opposition, balanced pop, one misinfo post",
-}
-
-
-def print_group_summary(group: str, metrics: list[dict]) -> None:
-    if not metrics:
-        print(f"\n  [Group {group}] No valid configs.")
-        return
-
-    jaccards   = [m["jaccard"]    for m in metrics]
-    xcorrs     = [m["xcorr_peak"] for m in metrics if not np.isnan(m["xcorr_peak"])]
-    wins0      = sum(1 for m in metrics if m["winner"] == 0)
-    centrist0  = [m["centrist_share0"] for m in metrics]
-
-    print(f"\n  {'─'*60}")
-    print(f"  Group {group} — {GROUP_DESCRIPTIONS.get(group, '')}")
-    print(f"  {'─'*60}")
-    print(f"  Configs analysed     : {len(metrics)}")
-    print()
-    print(f"  [AUDIENCE OVERLAP — Jaccard similarity]")
-    print(f"    Mean   : {np.mean(jaccards):.4f}")
-    print(f"    Median : {np.median(jaccards):.4f}")
-    print(f"    Range  : [{min(jaccards):.4f}, {max(jaccards):.4f}]")
-    wilcoxon_greater_than_zero(jaccards, group)
-    print()
-    print(f"  [WINNER ANALYSIS]")
-    binomial_win_rate(wins0, len(metrics), group)
-    print()
-    print(f"  [CENTRIST CONTEST — post 0's share of centrist interactions]")
-    print(f"    Mean   : {np.mean(centrist0):.3f}  "
-          f"(0.5 = split evenly, >0.5 = post 0 dominates centrists)")
-    print()
-    print(f"  [TEMPORAL SUPPRESSION — peak cross-correlation]")
-    if xcorrs:
-        neg = sum(1 for x in xcorrs if x < 0)
-        print(f"    Mean   : {np.mean(xcorrs):+.4f}")
-        print(f"    Negative (suppression): {neg}/{len(xcorrs)}  "
-              f"({100*neg/len(xcorrs):.1f}%)")
-    else:
-        print(f"    Insufficient data.")
-
-
-def print_full_summary(all_metrics: dict[str, list[dict]]) -> None:
-    all_jaccards = [m["jaccard"] for g in all_metrics.values() for m in g]
-    all_xcorrs   = [m["xcorr_peak"] for g in all_metrics.values()
-                    for m in g if not np.isnan(m["xcorr_peak"])]
-
-    print("\n" + "="*62)
-    print("  HYPOTHESIS 2 — COMPETITION BETWEEN OPPOSING-BELIEF POSTS")
-    print("="*62)
-
-    for group in GROUPS:
-        if group in all_metrics:
-            print_group_summary(group, all_metrics[group])
-
-    print(f"\n  {'═'*60}")
-    print(f"  OVERALL  ({sum(len(v) for v in all_metrics.values())} configs)")
-    print(f"  {'═'*60}")
-    print(f"  Mean Jaccard        : {np.mean(all_jaccards):.4f}")
-    neg_xcorr = sum(1 for x in all_xcorrs if x < 0)
-    print(f"  Negative xcorr rate : {neg_xcorr}/{len(all_xcorrs)}  "
-          f"({100*neg_xcorr/max(len(all_xcorrs),1):.1f}%)")
-    print()
-
-    # Overall verdict
-    mean_jac   = np.mean(all_jaccards)
-    neg_rate   = neg_xcorr / max(len(all_xcorrs), 1)
-    _, jac_p   = stats.wilcoxon(all_jaccards, alternative="greater") \
-                 if len(all_jaccards) >= 4 else (None, 1.0)
-
-    if mean_jac > 0.05 and jac_p < 0.05 and neg_rate > 0.5:
-        verdict = ("SUPPORTED — posts share a significant audience and show "
-                   "temporal suppression patterns.")
-    elif mean_jac > 0.05 and jac_p < 0.05:
-        verdict = ("PARTIALLY SUPPORTED — posts compete for the same audience "
-                   "but suppression is not consistent.")
-    elif neg_rate > 0.5:
-        verdict = ("PARTIALLY SUPPORTED — temporal suppression observed but "
-                   "audience overlap is low (echo chamber spreading).")
-    else:
-        verdict = ("NOT SUPPORTED — posts spread through separate communities "
-                   "with no evidence of suppression.")
-    print(f"  Verdict: {verdict}")
-    print("="*62 + "\n")
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  PLOTTING
-# ══════════════════════════════════════════════════════════════════════════════
-
-COLORS = {
-    "post0": "#4C9BE8",   # blue
-    "post1": "#E07B39",   # orange
-    "centrist": "#7CB97C",
-}
-GROUP_COLORS = {"A": "#4C9BE8", "B": "#7CB97C", "C": "#E07B39",
-                "D": "#9B59B6", "E": "#E74C3C"}
-
-
-def plot_jaccard_by_group(all_metrics: dict, out_dir: str) -> None:
-    groups   = [g for g in GROUPS if g in all_metrics and all_metrics[g]]
-    data     = [[m["jaccard"] for m in all_metrics[g]] for g in groups]
-    colors   = [GROUP_COLORS[g] for g in groups]
-
-    fig, ax = plt.subplots(figsize=(9, 5))
-    bp = ax.boxplot(data, labels=groups, patch_artist=True,
-                    medianprops=dict(color="black", linewidth=2))
-    for patch, color in zip(bp["boxes"], colors):
-        patch.set_facecolor(color)
-        patch.set_alpha(0.75)
-
-    ax.axhline(0, color="grey", linewidth=0.8, linestyle="--")
-    ax.set_title("Hypothesis 2 — Audience Overlap (Jaccard) by Config Group",
-                 fontweight="bold")
-    ax.set_xlabel("Config Group")
-    ax.set_ylabel("Jaccard Similarity")
-
-    # Annotate group descriptions
-    for i, g in enumerate(groups):
-        ax.text(i + 1, ax.get_ylim()[0] - 0.02,
-                GROUP_DESCRIPTIONS.get(g, ""), ha="center", fontsize=6,
-                color="grey", rotation=8)
-
-    plt.tight_layout()
-    path = os.path.join(out_dir, "hyp12_jaccard_by_group.png")
-    plt.savefig(path, dpi=150)
-    plt.close()
-    print(f"[INFO] Jaccard plot saved → {path}")
-
-
-def plot_camp_segregation(all_metrics: dict, out_dir: str) -> None:
-    """
-    Stacked bar chart: for each group, average fraction of interactions
-    that each post drew from each belief camp.
-    """
-    groups = [g for g in GROUPS if g in all_metrics and all_metrics[g]]
-    camps  = ["red", "centrist", "blue"]
-    camp_colors = {"red": "#E07B39", "centrist": "#7CB97C", "blue": "#4C9BE8"}
-
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle("Hypothesis 2 — Camp Segregation by Group",
-                 fontsize=13, fontweight="bold")
-
-    for ax, post_key, post_label in zip(
-        axes,
-        ["camp_fractions0", "camp_fractions1"],
-        ["Post 0", "Post 1"]
-    ):
-        bottoms = np.zeros(len(groups))
-        for camp in camps:
-            vals = [
-                np.mean([m[post_key][camp] for m in all_metrics[g]])
-                for g in groups
-            ]
-            ax.bar(groups, vals, bottom=bottoms,
-                   color=camp_colors[camp], alpha=0.85,
-                   label=camp.capitalize())
-            bottoms += np.array(vals)
-
-        ax.set_title(post_label)
-        ax.set_xlabel("Config Group")
-        ax.set_ylabel("Avg fraction of interactions")
-        ax.set_ylim(0, 1)
-        ax.legend(loc="upper right", fontsize=8)
-        ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1))
-
-    plt.tight_layout()
-    path = os.path.join(out_dir, "hyp12_camp_segregation.png")
-    plt.savefig(path, dpi=150)
-    plt.close()
-    print(f"[INFO] Camp segregation plot saved → {path}")
-
-
-def plot_centrist_contest(all_metrics: dict, out_dir: str) -> None:
-    """
-    For each group, scatter post0's centrist share vs post1's.
-    Points above the diagonal = post0 won centrists.
-    """
-    fig, axes = plt.subplots(1, len(GROUPS), figsize=(4 * len(GROUPS), 4))
-    fig.suptitle("Hypothesis 2 — Centrist Contest (share of centrist interactions)",
-                 fontsize=12, fontweight="bold")
-
-    for ax, group in zip(axes, GROUPS):
-        if group not in all_metrics or not all_metrics[group]:
-            ax.set_title(f"Group {group}\n(no data)")
-            ax.axis("off")
-            continue
-        c0 = [m["centrist_share0"] for m in all_metrics[group]]
-        c1 = [m["centrist_share1"] for m in all_metrics[group]]
-        ax.scatter(c0, c1, color=GROUP_COLORS[group], s=20, alpha=0.7)
-        ax.plot([0, 1], [0, 1], "k--", linewidth=0.8)   # diagonal
-        ax.set_xlim(0, 1); ax.set_ylim(0, 1)
-        ax.set_title(f"Group {group}", fontsize=9)
-        ax.set_xlabel("Post 0 centrist share", fontsize=8)
-        ax.set_ylabel("Post 1 centrist share", fontsize=8)
-        ax.set_aspect("equal")
-
-    plt.tight_layout()
-    path = os.path.join(out_dir, "hyp12_centrist_contest.png")
-    plt.savefig(path, dpi=150)
-    plt.close()
-    print(f"[INFO] Centrist contest plot saved → {path}")
-
-
-def plot_sample_curves(all_metrics: dict, out_dir: str, n_samples: int = 3) -> None:
-    """
-    For each group, plot n_samples side-by-side interaction curves
-    (post 0 vs post 1) to visually show whether they suppress each other.
-    """
-    hours = np.arange(MINUTES) / 60
-    groups = [g for g in GROUPS if g in all_metrics and all_metrics[g]]
-
-    fig, axes = plt.subplots(
-        len(groups), n_samples,
-        figsize=(5 * n_samples, 3.5 * len(groups)),
-        squeeze=False
-    )
-    fig.suptitle("Hypothesis 2 — Sample Interaction Curves (Post 0 vs Post 1)",
-                 fontsize=13, fontweight="bold")
-
-    for row, group in enumerate(groups):
-        samples = all_metrics[group][:n_samples]
-        for col in range(n_samples):
-            ax = axes[row][col]
-            if col < len(samples):
-                m = samples[col]
-                c0, c1 = m["curves"]
-                ax.plot(hours, c0, color=COLORS["post0"], linewidth=1.2,
-                        label=f"Post 0 (b={m['beliefValue0']})")
-                ax.plot(hours, c1, color=COLORS["post1"], linewidth=1.2,
-                        label=f"Post 1 (b={m['beliefValue1']})")
-                ax.set_title(
-                    f"G{group} | J={m['jaccard']:.2f} | "
-                    f"xcorr={m['xcorr_peak']:+.2f}", fontsize=7)
-                ax.set_xlabel("Hours", fontsize=7)
-                ax.set_ylabel("Interactions", fontsize=7)
-                ax.tick_params(labelsize=6)
-                ax.legend(fontsize=6)
-                ax.xaxis.set_major_locator(ticker.MultipleLocator(6))
-            else:
-                ax.axis("off")
-
-    plt.tight_layout()
-    path = os.path.join(out_dir, "hyp12_sample_curves.png")
-    plt.savefig(path, dpi=150)
-    plt.close()
-    print(f"[INFO] Sample curves saved → {path}")
-
-
-def plot_xcorr_distribution(all_metrics: dict, out_dir: str) -> None:
-    """
-    Histogram of peak cross-correlation values per group.
-    Negative values indicate temporal suppression.
-    """
-    groups = [g for g in GROUPS if g in all_metrics and all_metrics[g]]
-
-    fig, ax = plt.subplots(figsize=(9, 5))
-    for group in groups:
-        vals = [m["xcorr_peak"] for m in all_metrics[group]
-                if not np.isnan(m["xcorr_peak"])]
-        if vals:
-            ax.hist(vals, bins=20, alpha=0.55, color=GROUP_COLORS[group],
-                    label=f"Group {group}", edgecolor="none")
-
-    ax.axvline(0, color="black", linewidth=1.2, linestyle="--",
-               label="Zero (no suppression)")
-    ax.set_title("Hypothesis 2 — Cross-Correlation Distribution by Group",
-                 fontweight="bold")
-    ax.set_xlabel("Peak cross-correlation (negative = suppression)")
-    ax.set_ylabel("Config count")
+    ax.set_title("Cumulative Interactions Over Time\n(all runs overlaid)")
+    ax.set_xlabel("Simulation time (hours)")
+    ax.set_ylabel("Cumulative interactions")
     ax.legend(fontsize=8)
-    plt.tight_layout()
-    path = os.path.join(out_dir, "hyp12_xcorr_distribution.png")
-    plt.savefig(path, dpi=150)
-    plt.close()
-    print(f"[INFO] Cross-correlation distribution saved → {path}")
+    ax.xaxis.set_major_locator(mticker.MultipleLocator(6))
+
+    # ── right panel: smoothed interaction RATE, mean only ──
+    ax2 = axes[1]
+    all_p0_rate = np.mean(
+        [rolling_sum(r["p0_interactions_over_time"], SMOOTHING_WINDOW) for r in runs], axis=0
+    )
+    all_p1_rate = np.mean(
+        [rolling_sum(r["p1_interactions_over_time"], SMOOTHING_WINDOW) for r in runs], axis=0
+    )
+    ax2.plot(time_axis, all_p0_rate, color=CAMP_COLOURS["post_0_red"],  linewidth=2, label="Post 0 (red-leaning)")
+    ax2.plot(time_axis, all_p1_rate, color=CAMP_COLOURS["post_1_blue"], linewidth=2, label="Post 1 (blue-leaning)")
+
+    ax2.set_title(f"Interaction Rate Over Time\n({SMOOTHING_WINDOW}-min rolling window, mean across runs)")
+    ax2.set_xlabel("Simulation time (hours)")
+    ax2.set_ylabel(f"Interactions per {SMOOTHING_WINDOW}-min window")
+    ax2.legend(fontsize=8)
+    ax2.xaxis.set_major_locator(mticker.MultipleLocator(6))
+
+    fig.suptitle("Fig 1 — The Interaction Race", fontsize=13, fontweight="bold")
+    fig.tight_layout()
+    path = os.path.join(plots_dir, "fig1_interaction_race.png")
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
 
 
-def plot_jaccard_vs_belief_distance(all_metrics: dict, out_dir: str) -> None:
+# ─────────────────────────────────────────────────────────────────────────────
+#  FIGURE 2 — Win Rate by Belief Pair
+# ─────────────────────────────────────────────────────────────────────────────
+
+def plot_win_rate_by_belief_pair(runs, plots_dir):
     """
-    Scatter: belief distance between the two posts vs Jaccard overlap.
-    Tests whether more ideologically distant posts share less audience.
+    For each unique (red_belief, blue_belief) pair, compute the fraction of
+    runs where post 0 won, post 1 won, or they tied.
+
+    Reveals whether asymmetric belief pairs produce a consistent winner and
+    whether wider polarity gaps amplify the competition.
     """
-    fig, ax = plt.subplots(figsize=(8, 5))
+    # group runs by their belief pair label
+    groups = defaultdict(lambda: {"post_0": 0, "post_1": 0, "tie": 0, "n": 0})
+    for run in runs:
+        label = f"({run['red_belief']}, {run['blue_belief']})"
+        w = winner(run)
+        groups[label][w] += 1
+        groups[label]["n"] += 1
 
-    for group in GROUPS:
-        if group not in all_metrics:
-            continue
-        x = [m["beliefDistance"] for m in all_metrics[group]]
-        y = [m["jaccard"]        for m in all_metrics[group]]
-        ax.scatter(x, y, color=GROUP_COLORS[group], s=18, alpha=0.6,
-                   label=f"Group {group}")
+    # sort by polarity gap then red belief for a sensible x-axis order
+    unique_pairs = sorted(
+        groups.keys(),
+        key=lambda lbl: (
+            # extract ints from "(a, b)" string
+            abs(int(lbl.split(",")[1].strip(" )"))),     # gap magnitude
+            int(lbl.split("(")[1].split(",")[0])          # red belief
+        )
+    )
 
-    # Overall regression
-    all_x = [m["beliefDistance"] for g in all_metrics.values() for m in g]
-    all_y = [m["jaccard"]        for g in all_metrics.values() for m in g]
-    if len(set(all_x)) > 1:
-        slope, intercept, r, p, _ = stats.linregress(all_x, all_y)
-        xs = np.linspace(min(all_x), max(all_x), 100)
-        ax.plot(xs, intercept + slope * xs, "k--", linewidth=1.5,
-                label=f"Overall fit  r={r:.2f}  p={p:.3e}")
+    n_pairs = len(unique_pairs)
+    x = np.arange(n_pairs)
+    bar_w = 0.28
 
-    ax.set_title("Hypothesis 2 — Belief Distance vs Audience Overlap",
-                 fontweight="bold")
-    ax.set_xlabel("Belief distance |b0 − b1|")
-    ax.set_ylabel("Jaccard similarity")
+    fig, ax = plt.subplots(figsize=(max(8, n_pairs * 1.2), 5))
+
+    p0_fracs, p1_fracs, tie_fracs, counts = [], [], [], []
+    for lbl in unique_pairs:
+        g = groups[lbl]
+        n = g["n"]
+        counts.append(n)
+        p0_fracs.append(g["post_0"] / n if n else 0)
+        p1_fracs.append(g["post_1"] / n if n else 0)
+        tie_fracs.append(g["tie"]   / n if n else 0)
+
+    bars0 = ax.bar(x - bar_w, p0_fracs, bar_w, label="Post 0 wins (red-leaning)", color=CAMP_COLOURS["post_0_red"])
+    bars1 = ax.bar(x,          p1_fracs, bar_w, label="Post 1 wins (blue-leaning)", color=CAMP_COLOURS["post_1_blue"])
+    bars2 = ax.bar(x + bar_w,  tie_fracs, bar_w, label="Tie", color="#7f7f7f")
+
+    # annotate with run counts
+    for xi, n in zip(x, counts):
+        ax.text(xi, 1.02, f"n={n}", ha="center", va="bottom", fontsize=7)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(unique_pairs, rotation=30, ha="right", fontsize=9)
+    ax.set_xlabel("Belief pair (red post belief, blue post belief)")
+    ax.set_ylabel("Fraction of runs")
+    ax.set_ylim(0, 1.12)
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
+    ax.axhline(0.5, linestyle="--", color="black", linewidth=0.8, alpha=0.5)
     ax.legend(fontsize=8)
-    plt.tight_layout()
-    path = os.path.join(out_dir, "hyp12_distance_vs_jaccard.png")
-    plt.savefig(path, dpi=150)
-    plt.close()
-    print(f"[INFO] Distance vs Jaccard plot saved → {path}")
+    ax.set_title("Fig 2 — Win Rate by Belief Pair\n(does belief proximity to centre give a structural advantage?)")
+
+    fig.tight_layout()
+    path = os.path.join(plots_dir, "fig2_win_rate_by_belief_pair.png")
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  MAIN
-# ══════════════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────────────────────────────────────
+#  FIGURE 3 — Interest Delta Effect (symmetric pairs only)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def plot_interest_delta_effect(runs, plots_dir):
+    """
+    Restrict to symmetric belief pairs (red_belief == -blue_belief) so belief
+    is not a confound.  Within that subset, group runs by interest_delta and
+    show win rates.
+
+    If interest edge reliably decides outcomes, the bars should flip
+    predictably across delta = -3 / 0 / +3.
+    """
+    sym_runs = [r for r in runs if r["belief_symmetry"]]
+
+    if len(sym_runs) == 0:
+        return
+
+    delta_groups = defaultdict(lambda: {"post_0": 0, "post_1": 0, "tie": 0, "n": 0})
+    for run in sym_runs:
+        d = run["interest_delta"]
+        w = winner(run)
+        delta_groups[d][w] += 1
+        delta_groups[d]["n"] += 1
+
+    deltas = sorted(delta_groups.keys())
+    x = np.arange(len(deltas))
+    bar_w = 0.28
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+
+    p0_fracs = [delta_groups[d]["post_0"] / delta_groups[d]["n"] for d in deltas]
+    p1_fracs = [delta_groups[d]["post_1"] / delta_groups[d]["n"] for d in deltas]
+    tie_fracs = [delta_groups[d]["tie"]   / delta_groups[d]["n"] for d in deltas]
+    counts    = [delta_groups[d]["n"] for d in deltas]
+
+    ax.bar(x - bar_w, p0_fracs, bar_w, label="Post 0 wins (red-leaning)", color=CAMP_COLOURS["post_0_red"])
+    ax.bar(x,          p1_fracs, bar_w, label="Post 1 wins (blue-leaning)", color=CAMP_COLOURS["post_1_blue"])
+    ax.bar(x + bar_w,  tie_fracs, bar_w, label="Tie", color="#7f7f7f")
+
+    for xi, n in zip(x, counts):
+        ax.text(xi, 1.02, f"n={n}", ha="center", va="bottom", fontsize=8)
+
+    labels = [
+        f"δ={d}\n({'red edge' if d < 0 else 'blue edge' if d > 0 else 'equal'})"
+        for d in deltas
+    ]
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontsize=9)
+    ax.set_xlabel("Interest delta (blue interest − red interest)")
+    ax.set_ylabel("Fraction of runs")
+    ax.set_ylim(0, 1.12)
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1))
+    ax.axhline(0.5, linestyle="--", color="black", linewidth=0.8, alpha=0.5)
+    ax.legend(fontsize=8)
+    ax.set_title(
+        "Fig 3 — Effect of Interest Edge on Win Rate\n"
+        "(symmetric belief pairs only — belief is not a confound)"
+    )
+
+    fig.tight_layout()
+    path = os.path.join(plots_dir, "fig3_interest_delta_effect.png")
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  FIGURE 4 — Contested Agent Breakdown
+# ─────────────────────────────────────────────────────────────────────────────
+
+def plot_contested_agents(runs, plots_dir):
+    """
+    Two panels:
+
+    Left  — stacked bar of the four contested-agent outcomes aggregated across
+            all runs. This is the cleanest view of the "fight": only agents
+            who received BOTH posts are counted.
+
+    Right — scatter of (chose_post_0 / total_contested) vs
+            (p0_total / (p0_total + p1_total)): does the contested-agent
+            ratio track the overall interaction ratio?  High correlation
+            would confirm that the fight among contested agents explains
+            the overall outcome.
+    """
+    totals = {"chose_post_0": 0, "chose_post_1": 0, "chose_both": 0, "chose_neither": 0}
+    scatter_x, scatter_y, scatter_col = [], [], []
+
+    for run in runs:
+        c = run["contested"]
+        for key in totals:
+            totals[key] += c.get(key, 0)
+
+        contested_total = c.get("chose_post_0", 0) + c.get("chose_post_1", 0)
+        if contested_total > 0:
+            cx = c["chose_post_0"] / contested_total
+        else:
+            cx = None
+
+        overall_total = run["p0_total"] + run["p1_total"]
+        if overall_total > 0:
+            cy = run["p0_total"] / overall_total
+        else:
+            cy = None
+
+        if cx is not None and cy is not None:
+            scatter_x.append(cx)
+            scatter_y.append(cy)
+            # colour dot by winner for extra information
+            w = winner(run)
+            scatter_col.append(
+                CAMP_COLOURS["post_0_red"] if w == "post_0" else
+                CAMP_COLOURS["post_1_blue"] if w == "post_1" else
+                "#7f7f7f"
+            )
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+
+    # ── left: stacked bar ──
+    ax = axes[0]
+    labels = ["Chose post 0\n(red-leaning)", "Chose post 1\n(blue-leaning)", "Chose both", "Chose neither"]
+    values = [
+        totals["chose_post_0"],
+        totals["chose_post_1"],
+        totals["chose_both"],
+        totals["chose_neither"],
+    ]
+    colours = [
+        CAMP_COLOURS["post_0_red"],
+        CAMP_COLOURS["post_1_blue"],
+        "#9467bd",
+        "#bcbd22",
+    ]
+    bars = ax.bar(labels, values, color=colours, edgecolor="white", linewidth=0.5)
+    for bar, val in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + max(values) * 0.01,
+                str(val), ha="center", va="bottom", fontsize=9)
+    ax.set_ylabel("Agent count (summed across all runs)")
+    ax.set_title("Contested Agent Outcomes\n(agents who received both posts)")
+
+    # ── right: scatter ──
+    ax2 = axes[1]
+    if scatter_x:
+        ax2.scatter(scatter_x, scatter_y, c=scatter_col, alpha=0.65, edgecolors="none", s=45)
+        # diagonal reference line: perfect correlation
+        ax2.plot([0, 1], [0, 1], "k--", linewidth=0.9, alpha=0.5, label="Perfect correlation")
+        # correlation coefficient
+        if len(scatter_x) > 1:
+            corr = np.corrcoef(scatter_x, scatter_y)[0, 1]
+            ax2.text(0.05, 0.93, f"r = {corr:.3f}", transform=ax2.transAxes,
+                     fontsize=10, va="top")
+        ax2.set_xlabel("Post 0 share among contested agents\n(chose_post_0 / (chose_post_0 + chose_post_1))")
+        ax2.set_ylabel("Post 0 share of total interactions\n(p0_total / (p0_total + p1_total))")
+        ax2.set_xlim(0, 1)
+        ax2.set_ylim(0, 1)
+        ax2.legend(fontsize=8)
+    else:
+        ax2.text(0.5, 0.5, "No contested-agent data", ha="center", va="center",
+                 transform=ax2.transAxes, fontsize=11, color="grey")
+
+    ax2.set_title("Contested vs Overall Ratio\n(do contested agents drive the overall outcome?)")
+
+    fig.suptitle("Fig 4 — Contested Agent Breakdown", fontsize=13, fontweight="bold")
+    fig.tight_layout()
+    path = os.path.join(plots_dir, "fig4_contested_agents.png")
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  SUMMARY REPORT
+# ─────────────────────────────────────────────────────────────────────────────
+
+def generate_summary(runs):
+    """
+    Computes all cross-cutting statistics from the loaded runs and prints
+    them to the command line.
+
+    Sections:
+      1. Overall results       — win counts, mean interactions, margin
+      2. Interaction dynamics  — time-to-peak, peak rate, when lead locks in
+      3. By belief pair        — win rate per (red_belief, blue_belief) pair
+      4. Interest delta effect — win rate by delta, symmetric pairs only
+      5. First-mover effect    — win rate by time_offset
+      6. Contested agents      — chose_post_0/1/both/neither totals + correlation
+      7. Cross-camp reach      — how much each post pulled from opposing camp
+    """
+    n = len(runs)
+    lines = []
+
+    def section(title):
+        lines.append("")
+        lines.append("=" * 60)
+        lines.append(f"  {title}")
+        lines.append("=" * 60)
+
+    def row(label, value):
+        lines.append(f"  {label:<42} {value}")
+
+    # ── header ────────────────────────────────────────────────────────────────
+    lines.append("=" * 60)
+    lines.append("  HYPOTHESIS 12 — COMPETING BELIEFS  |  SUMMARY REPORT")
+    lines.append("=" * 60)
+    row("Runs analysed", n)
+
+    # ── 1. Overall results ────────────────────────────────────────────────────
+    section("1. OVERALL RESULTS")
+
+    wins_p0 = sum(1 for r in runs if winner(r) == "post_0")
+    wins_p1 = sum(1 for r in runs if winner(r) == "post_1")
+    ties    = sum(1 for r in runs if winner(r) == "tie")
+
+    p0_totals = [r["p0_total"] for r in runs]
+    p1_totals = [r["p1_total"] for r in runs]
+    margins   = [r["p0_total"] - r["p1_total"] for r in runs]
+
+    row("Post 0 (red-leaning) wins",  f"{wins_p0}  ({wins_p0/n:.1%})")
+    row("Post 1 (blue-leaning) wins", f"{wins_p1}  ({wins_p1/n:.1%})")
+    row("Ties",                        f"{ties}  ({ties/n:.1%})")
+    row("Mean total interactions — post 0", f"{np.mean(p0_totals):.1f}  (SD {np.std(p0_totals):.1f})")
+    row("Mean total interactions — post 1", f"{np.mean(p1_totals):.1f}  (SD {np.std(p1_totals):.1f})")
+    row("Mean interaction margin (p0 − p1)", f"{np.mean(margins):.1f}  (SD {np.std(margins):.1f})")
+    row("Median interaction margin",          f"{np.median(margins):.1f}")
+
+    # ── 2. Interaction dynamics ───────────────────────────────────────────────
+    section("2. INTERACTION DYNAMICS")
+
+    p0_peaks, p1_peaks = [], []
+    p0_peak_times, p1_peak_times = [], []
+    crossover_times = []  # first minute where cumulative lead flips
+
+    for r in runs:
+        p0_arr = np.array(r["p0_interactions_over_time"])
+        p1_arr = np.array(r["p1_interactions_over_time"])
+
+        p0_peaks.append(float(np.max(p0_arr)))
+        p1_peaks.append(float(np.max(p1_arr)))
+        p0_peak_times.append(int(np.argmax(p0_arr)))
+        p1_peak_times.append(int(np.argmax(p1_arr)))
+
+        # crossover: first tick where the cumulative leader changes
+        p0_cum = np.cumsum(p0_arr)
+        p1_cum = np.cumsum(p1_arr)
+        diff = p0_cum - p1_cum
+        sign_changes = np.where(np.diff(np.sign(diff)))[0]
+        if len(sign_changes) > 0:
+            crossover_times.append(int(sign_changes[0]))
+
+    row("Mean peak interaction rate — post 0",       f"{np.mean(p0_peaks):.2f} interactions/min")
+    row("Mean peak interaction rate — post 1",       f"{np.mean(p1_peaks):.2f} interactions/min")
+    row("Mean time-to-peak — post 0 (hours)",        f"{np.mean(p0_peak_times)/60:.2f}")
+    row("Mean time-to-peak — post 1 (hours)",        f"{np.mean(p1_peak_times)/60:.2f}")
+    if crossover_times:
+        row("Runs with a lead crossover",            f"{len(crossover_times)}  ({len(crossover_times)/n:.1%})")
+        row("Mean crossover time (hours)",           f"{np.mean(crossover_times)/60:.2f}")
+    else:
+        row("Runs with a lead crossover",            "0  (0.0%)")
+
+    # ── 3. Win rate by belief pair ────────────────────────────────────────────
+    section("3. WIN RATE BY BELIEF PAIR")
+
+    pair_groups = defaultdict(lambda: {"post_0": 0, "post_1": 0, "tie": 0, "n": 0})
+    for r in runs:
+        label = f"({r['red_belief']:+d}, {r['blue_belief']:+d})"
+        pair_groups[label][winner(r)] += 1
+        pair_groups[label]["n"] += 1
+
+    lines.append(f"  {'Belief pair':<18} {'n':>4}  {'P0 wins':>8}  {'P1 wins':>8}  {'Ties':>6}")
+    lines.append("  " + "-" * 50)
+    for label in sorted(pair_groups):
+        g = pair_groups[label]
+        nn = g["n"]
+        lines.append(
+            f"  {label:<18} {nn:>4}  "
+            f"{g['post_0']:>4} ({g['post_0']/nn:.0%})  "
+            f"{g['post_1']:>4} ({g['post_1']/nn:.0%})  "
+            f"{g['tie']:>3} ({g['tie']/nn:.0%})"
+        )
+
+    # ── 4. Interest delta effect (symmetric pairs only) ───────────────────────
+    section("4. INTEREST DELTA EFFECT  (symmetric belief pairs only)")
+
+    sym_runs = [r for r in runs if r["belief_symmetry"]]
+    if not sym_runs:
+        lines.append("  No symmetric-belief runs found.")
+    else:
+        delta_groups = defaultdict(lambda: {"post_0": 0, "post_1": 0, "tie": 0, "n": 0})
+        for r in sym_runs:
+            delta_groups[r["interest_delta"]][winner(r)] += 1
+            delta_groups[r["interest_delta"]]["n"] += 1
+
+        lines.append(f"  {'Delta':>6}  {'Edge':>12}  {'n':>4}  {'P0 wins':>8}  {'P1 wins':>8}  {'Ties':>6}")
+        lines.append("  " + "-" * 56)
+        for d in sorted(delta_groups):
+            g = delta_groups[d]
+            nn = g["n"]
+            edge = "red edge" if d < 0 else "blue edge" if d > 0 else "equal"
+            lines.append(
+                f"  {d:>+6}  {edge:>12}  {nn:>4}  "
+                f"{g['post_0']:>4} ({g['post_0']/nn:.0%})  "
+                f"{g['post_1']:>4} ({g['post_1']/nn:.0%})  "
+                f"{g['tie']:>3} ({g['tie']/nn:.0%})"
+            )
+
+    # ── 5. First-mover effect (by time_offset) ────────────────────────────────
+    section("5. FIRST-MOVER EFFECT  (red posts first by time_offset minutes)")
+
+    offset_groups = defaultdict(lambda: {"post_0": 0, "post_1": 0, "tie": 0, "n": 0})
+    for r in runs:
+        offset_groups[r["time_offset"]][winner(r)] += 1
+        offset_groups[r["time_offset"]]["n"] += 1
+
+    lines.append(f"  {'Offset (min)':>12}  {'n':>4}  {'P0 wins':>8}  {'P1 wins':>8}  {'Ties':>6}")
+    lines.append("  " + "-" * 50)
+    for offset in sorted(offset_groups):
+        g = offset_groups[offset]
+        nn = g["n"]
+        lines.append(
+            f"  {offset:>12}  {nn:>4}  "
+            f"{g['post_0']:>4} ({g['post_0']/nn:.0%})  "
+            f"{g['post_1']:>4} ({g['post_1']/nn:.0%})  "
+            f"{g['tie']:>3} ({g['tie']/nn:.0%})"
+        )
+
+    # ── 6. Contested agents ───────────────────────────────────────────────────
+    section("6. CONTESTED AGENTS  (saw both posts, had to choose)")
+
+    total_c0      = sum(r["contested"].get("chose_post_0",  0) for r in runs)
+    total_c1      = sum(r["contested"].get("chose_post_1",  0) for r in runs)
+    total_both    = sum(r["contested"].get("chose_both",    0) for r in runs)
+    total_neither = sum(r["contested"].get("chose_neither", 0) for r in runs)
+    total_contested = total_c0 + total_c1 + total_both + total_neither
+
+    row("Total contested agents (across all runs)", total_contested)
+    if total_contested:
+        row("  Chose post 0 only (red-leaning)",  f"{total_c0}  ({total_c0/total_contested:.1%})")
+        row("  Chose post 1 only (blue-leaning)", f"{total_c1}  ({total_c1/total_contested:.1%})")
+        row("  Chose both",                        f"{total_both}  ({total_both/total_contested:.1%})")
+        row("  Chose neither",                     f"{total_neither}  ({total_neither/total_contested:.1%})")
+
+    # correlation: contested ratio vs overall ratio
+    cx_vals, cy_vals = [], []
+    for r in runs:
+        c = r["contested"]
+        denom_c = c.get("chose_post_0", 0) + c.get("chose_post_1", 0)
+        denom_o = r["p0_total"] + r["p1_total"]
+        if denom_c > 0 and denom_o > 0:
+            cx_vals.append(c["chose_post_0"] / denom_c)
+            cy_vals.append(r["p0_total"] / denom_o)
+
+    if len(cx_vals) > 1:
+        corr = np.corrcoef(cx_vals, cy_vals)[0, 1]
+        row("Correlation: contested ratio vs overall ratio", f"r = {corr:.3f}")
+
+    # agreement: does contested winner match overall winner?
+    agree = sum(1 for r in runs if contested_winner(r) == winner(r) and winner(r) != "tie")
+    eligible = sum(1 for r in runs if winner(r) != "tie" and contested_winner(r) != "no_contest")
+    if eligible:
+        row("Contested winner matches overall winner", f"{agree}/{eligible}  ({agree/eligible:.1%})")
+
+    # ── 7. Cross-camp reach ───────────────────────────────────────────────────
+    section("7. CROSS-CAMP REACH  (mean interactions per camp, across all runs)")
+
+    for post_key, label in [("p0_by_camp", "Post 0 (red-leaning)"), ("p1_by_camp", "Post 1 (blue-leaning)")]:
+        red_vals      = [r[post_key].get("red",      0) for r in runs]
+        centrist_vals = [r[post_key].get("centrist", 0) for r in runs]
+        blue_vals     = [r[post_key].get("blue",     0) for r in runs]
+        lines.append(f"  {label}:")
+        lines.append(f"    Red camp      : {np.mean(red_vals):.1f}  (SD {np.std(red_vals):.1f})")
+        lines.append(f"    Centrist camp : {np.mean(centrist_vals):.1f}  (SD {np.std(centrist_vals):.1f})")
+        lines.append(f"    Blue camp     : {np.mean(blue_vals):.1f}  (SD {np.std(blue_vals):.1f})")
+
+    lines.append("")
+    lines.append("=" * 60)
+    lines.append("  END OF REPORT")
+    lines.append("=" * 60)
+    lines.append("")
+
+    print("\n".join(lines))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  ENTRY POINT
+# ─────────────────────────────────────────────────────────────────────────────
 
 def main():
-    os.makedirs(RESULTS_FOLDER, exist_ok=True)
+    os.makedirs(PLOTS_DIR, exist_ok=True)
 
-    raw = load_all(OUTPUT_FOLDER, HYP_PREFIX)
+    runs = load_runs(OUTPUT_DIR, NUM_CONFIGS, NUM_SEEDS)
 
-    # Compute per-config pair metrics, grouped
-    all_metrics: dict[str, list[dict]] = defaultdict(list)
-    for group, cfgs in raw.items():
-        for cfg_idx, cfg_posts in cfgs.items():
-            m = compute_pair_metrics(cfg_posts)
-            if m is not None:
-                all_metrics[group].append(m)
+    if not runs:
+        return
 
-    print_full_summary(all_metrics)
-
-    plot_jaccard_by_group(all_metrics, RESULTS_FOLDER)
-    plot_camp_segregation(all_metrics, RESULTS_FOLDER)
-    plot_centrist_contest(all_metrics, RESULTS_FOLDER)
-    plot_xcorr_distribution(all_metrics, RESULTS_FOLDER)
-    plot_jaccard_vs_belief_distance(all_metrics, RESULTS_FOLDER)
-    plot_sample_curves(all_metrics, RESULTS_FOLDER)
+    plot_interaction_race(runs, PLOTS_DIR)
+    plot_win_rate_by_belief_pair(runs, PLOTS_DIR)
+    plot_interest_delta_effect(runs, PLOTS_DIR)
+    plot_contested_agents(runs, PLOTS_DIR)
+    generate_summary(runs)
 
 
 if __name__ == "__main__":

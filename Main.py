@@ -36,27 +36,83 @@ def mapGraphToAgents(agentsData, networkData):
     return agents
 
 
+def buildSimulationData(postsQueue):
+    """
+    Initialises the simulationData structure for all posts.
+
+    Per-post:
+      interactions_over_time    — interaction count at each absolute simulation
+                                  tick (length = MAXIMUM_TIME). Using absolute
+                                  time means both posts share the same x-axis,
+                                  making direct comparison straightforward.
+      interactions_by_belief_camp — how many interacting agents came from each
+                                  camp; reveals cross-camp reach.
+      total_interactions        — filled in after the simulation ends.
+
+    contested_agents — agents that received BOTH posts and had to choose.
+      Computed post-simulation from agent.receivedPosts vs agent.sharedPosts.
+      This is the cleanest "who won the fight" signal because it only counts
+      agents who genuinely faced a choice.
+    """
+    simulationData = {
+        "posts": {
+            p.postID: {
+                "interactions_over_time": [0] * Constants.MAXIMUM_TIME,
+                "interactions_by_belief_camp": {"red": 0, "centrist": 0, "blue": 0},
+                "total_interactions": 0,
+            }
+            for p in postsQueue
+        },
+        "contested_agents": {
+            "chose_post_0":  0,  # received both, shared only post 0
+            "chose_post_1":  0,  # received both, shared only post 1
+            "chose_both":    0,  # received both, shared both
+            "chose_neither": 0,  # received both, shared neither
+        },
+    }
+    return simulationData
+
+
+def collectContestedAgents(simulationData, agentsList, allPostIDs):
+    """
+    Walk every agent after the simulation ends and classify those who
+    received all competing posts into one of the four contest outcomes.
+    Only agents who were exposed to every post in the run are counted —
+    agents who only saw one post had no real choice to make.
+    """
+    allPostIDs = set(allPostIDs)
+
+    for agent in agentsList:
+        if agent.isNewsAgency:
+            continue
+
+        # Skip agents that were not exposed to all posts
+        if not allPostIDs.issubset(agent.receivedPosts):
+            continue
+
+        sharedAll    = allPostIDs.issubset(agent.sharedPosts)
+        sharedNone   = agent.sharedPosts.isdisjoint(allPostIDs)
+        sharedPost0  = 0 in agent.sharedPosts
+        sharedPost1  = 1 in agent.sharedPosts
+
+        if sharedAll:
+            simulationData["contested_agents"]["chose_both"] += 1
+        elif sharedNone:
+            simulationData["contested_agents"]["chose_neither"] += 1
+        elif sharedPost0:
+            simulationData["contested_agents"]["chose_post_0"] += 1
+        elif sharedPost1:
+            simulationData["contested_agents"]["chose_post_1"] += 1
+
+
 def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.Agent]", agenciesList: "list[Agent.Agent]"):
     
     postsQueue = readPosts(configData, simulationAgentsList, agenciesList)
-    simulationData = {
-        p.postID: {
-            "isMisinformation": p.isMisinformation,
-            "beliefValue"     : p.beliefValue,
-            "interactions"    : [0] * (24 * 60),
-            "interactionsByBeliefCamp": {
-                "red"     : [0] * (24 * 60),
-                "centrist": [0] * (24 * 60),
-                "blue"    : [0] * (24 * 60),
-            },
-            "agentsReached": [],   # agent IDs that accepted this post
-        }
-        for p in postsQueue
-    } # for hypothesis 12
+    simulationData = buildSimulationData(postsQueue)
+    allPostIDs = [p.postID for p in postsQueue]
 
-    
     for currentTime in range(Constants.MAXIMUM_TIME):
-        # OPs posts their original posts at time currentTime
+        # OPs post their original posts at time currentTime
         while (len(postsQueue) > 0 and postsQueue[0].postingTime == currentTime):
             currentPost = postsQueue[0]
 
@@ -65,7 +121,6 @@ def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.
                 currentPost.assignMisinfoOP(simulationAgentsList)
             else:
                 currentPost.assignRealNewsOP(agenciesList)
-
 
             # OP shares to its neighbors
             nthLayer = 0 # all posts here are original posts, thus layer is 0
@@ -89,6 +144,11 @@ def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.
             currentAgent = simulationAgentsList[agentID]
             currentAgent.addNewPostsToFeedQueue()
 
+    # ── post-simulation aggregation ──────────────────────────────────────
+    for postID, postData in simulationData["posts"].items():
+        postData["total_interactions"] = sum(postData["interactions_over_time"])
+
+    collectContestedAgents(simulationData, simulationAgentsList, allPostIDs)
 
     return simulationData
 
@@ -133,17 +193,9 @@ def runSimulation(conf_name, output_name):
 
     with open(os.path.join("output", output_name), "w") as f:
         json.dump(simulationData, f, indent=4)
-    # print(f"Simulation data saved in output/{output_name}.json")
-
-    # with open("output/network_output.json", "w") as f:
-    #     json.dump(networkData, f, indent=4)
-    # print("Network data saved in output/network_output.json")
 
 if __name__ == "__main__":
-    # try:
     conf_name = sys.argv[1]
     output_name = sys.argv[2]
 
     runSimulation(conf_name, output_name)
-    # except:
-    #     print("Error on command line arguments.")

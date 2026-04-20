@@ -118,6 +118,7 @@ class Agent:
         self.feedBuffer = set()
         self.interactionsDone = []
         self.sharedPosts = set()
+        self.receivedPosts = set()  # all post IDs ever added to this agent's feed buffer
 
         self.isNewsAgency = isNewsAgency
 
@@ -159,7 +160,6 @@ class Agent:
         if self.isNewsAgency:
             raise RuntimeError("Agent is a news agency, cannot get cognitive response.")
 
-
         postBeliefValue = post.getBeliefValue()
         postInterestValue = post.getInterestValue()
         agentSteepness = self.steepness
@@ -185,12 +185,13 @@ class Agent:
         return dccProbability
     
     def addPostToFeedBuffer(self, post, layer) -> None:
-        "Appends post to agent's feed buffer."
+        "Appends post to agent's feed buffer. Also marks the post as received."
 
         if self.isNewsAgency:
             raise RuntimeError("Agent is a news agency, cannot take in shared posts.")
 
         self.feedBuffer.add((post, layer))
+        self.receivedPosts.add(post.postID)  # track exposure regardless of sharing decision
             
     def addNewPostsToFeedQueue(self) -> None:
         "Adds posts from feed buffer to feed queue."
@@ -252,9 +253,6 @@ class Agent:
             raise RuntimeError("Agent is a news agency, cannot take in shared posts.")
 
         self.sharePost(post, layer, time, networkData)
-        # To do: all post interactions done by an agent will be stored in
-        # a struct inherent to that agent, we can then just collect this later
-        # on in order to do statistics
         self.interactionsDone.append(PostInteraction(      
                 time=time,
                 agent=self,
@@ -265,10 +263,11 @@ class Agent:
                 layer=layer
             )
         )
-        t_delta = time - post.postingTime
-        simulationData[post.postID]["interactions"][t_delta] += 1
-        simulationData[post.postID]["interactionsByBeliefCamp"][self.classifyAgentBelief()][t_delta] += 1
-        simulationData[post.postID]["agentsReached"].append(self.id)
+
+        # Record interaction on the absolute simulation clock
+        postData = simulationData["posts"][post.postID]
+        postData["interactions_over_time"][time] += 1
+        postData["interactions_by_belief_camp"][self.classifyAgentBelief()] += 1
 
         self.sharedPosts.add(post.postID)
 
