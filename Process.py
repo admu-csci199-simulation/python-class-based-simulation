@@ -18,6 +18,7 @@ import json
 import re
 import argparse
 import csv
+from scipy.stats import linregress
 
 AGENT_DISTRIBUTIONS = [
     [4, 1, 1], [3, 2, 1], [3, 1, 2],
@@ -44,7 +45,8 @@ def get_camp(belief_value):
 
 def compute_rates(interaction_array):
     """
-    Compute growth rate and decay rate from a post's interaction timeseries.
+    Compute growth rate and decay rate from a post's interaction timeseries
+    using OLS regression slopes.
 
     - Timeseries: sum of red+centrist+blue interactions per timestep.
     - Smooth with a rolling average to avoid noise spikes being misidentified as peak.
@@ -52,25 +54,26 @@ def compute_rates(interaction_array):
     - Peak: global maximum of the smoothed series from first active timestep onward.
     - Last active timestep: last index where interactions > 0.
 
-    Growth rate = total interactions from first_active to peak
-                  divided by number of timesteps in that window.
-    Decay rate  = total interactions from peak to last_active
-                  divided by number of timesteps in that window.
+    Growth rate = OLS slope fitted to the raw series from first_active to peak.
+                  Represents interactions gained per timestep during the rise phase.
+    Decay rate  = absolute value of OLS slope fitted from peak to last_active.
+                  Represents interactions lost per timestep during the fall phase.
 
     Both are 0 if the post was never shared.
-    Decay rate is 0 if peak == last_active (no decay phase).
+    Decay rate is 0 if there is no decay phase (peak == last_active).
+    Growth rate is 0 if the post peaked immediately (first_active == peak).
+    OLS requires at least 2 points; single-point phases default to 0.
     """
     # Collapse to a 1D timeseries
     series = [sum(t) for t in interaction_array]
 
-    total = sum(series)
-    if total == 0:
+    if sum(series) == 0:
         return 0.0, 0.0
 
-    # Smoothed series for peak detection
-    smoothed = []
+    # Smoothed series for peak detection only
     half = SMOOTH_WINDOW // 2
     n = len(series)
+    smoothed = []
     for i in range(n):
         window = series[max(0, i - half): min(n, i + half + 1)]
         smoothed.append(sum(window) / len(window))
@@ -79,24 +82,24 @@ def compute_rates(interaction_array):
     first_active = next(i for i, v in enumerate(series) if v > 0)
     last_active  = max(i for i, v in enumerate(series) if v > 0)
 
-    # Global peak index within the active window (using smoothed series)
+    # Global peak on smoothed series
     peak_idx = max(range(first_active, last_active + 1), key=lambda i: smoothed[i])
 
-    # Growth rate
-    growth_steps = peak_idx - first_active
-    if growth_steps > 0:
-        growth_interactions = sum(series[first_active: peak_idx + 1])
-        growth_rate = growth_interactions / growth_steps
+    # Growth rate: OLS slope over [first_active, peak_idx]
+    growth_segment = series[first_active: peak_idx + 1]
+    if len(growth_segment) >= 2:
+        x = list(range(len(growth_segment)))
+        growth_rate = linregress(x, growth_segment).slope
     else:
-        growth_rate = 0.0  # posted and immediately peaked (single timestep)
+        growth_rate = 0.0
 
-    # Decay rate
-    decay_steps = last_active - peak_idx
-    if decay_steps > 0:
-        decay_interactions = sum(series[peak_idx: last_active + 1])
-        decay_rate = decay_interactions / decay_steps
+    # Decay rate: absolute OLS slope over [peak_idx, last_active]
+    decay_segment = series[peak_idx: last_active + 1]
+    if len(decay_segment) >= 2:
+        x = list(range(len(decay_segment)))
+        decay_rate = abs(linregress(x, decay_segment).slope)
     else:
-        decay_rate = 0.0  # no decay phase
+        decay_rate = 0.0
 
     return growth_rate, decay_rate
 
