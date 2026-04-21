@@ -1,37 +1,43 @@
 ============================================================
   VIRALITY HYPOTHESIS ANALYSIS - STATISTICAL REPORT
-  n_agents = 300
-  Total records analysed: 1799218
+  Total records in summary : 360756
+  Posts with nonzero growth rate  : 360574
+  Posts with nonzero decay rate   : 360393
 ============================================================
 
 ============================================================
   1. SPEARMAN CORRELATION - Interest Value vs Virality Metrics
 ============================================================
   Tests whether interest_value and each virality metric are monotonically
-  related. Rank-based, so robust to skewed interaction count distributions.
+  related. Rank-based and robust to skewed interaction distributions.
+  Only posts where the metric is nonzero are included (active posts only).
   H0: No monotonic relationship between interest_value and the metric.
 
-  Growth Rate:
-    rho=+0.4433  p=0.0000e+00  ***
-  Decay Rate:
-    rho=+nan  p=nan  ns
+  Growth Rate  (n=360574):
+    rho=+0.0481  p=8.9393e-184  ***
+  Decay Rate  (n=360393):
+    rho=-0.3558  p=0.0000e+00  ***
 
 ============================================================
   2. LINEAR REGRESSION - Interest Value -> Virality Metrics
 ============================================================
-  Quantifies direction, magnitude, and goodness-of-fit of the linear
-  relationship. Slope = expected change in metric per 1-unit IV increase.
-  H0: slope = 0 (interest_value has no linear effect on the metric).
+  Slope = expected change in metric per 1-unit increase in interest_value.
+  Only posts where the metric is nonzero are included (active posts only).
+  H0: slope = 0 (no linear effect).
 
-  Growth Rate:
-    slope=0.171974  intercept=12.411311
-    R2=0.2878  p=0.0000e+00  SE=0.000202  ***
-  Decay Rate:
-    slope=0.000000  intercept=0.000000
-    R2=nan  p=nan  SE=nan  ns
+  Growth Rate  (n=360574):
+    slope=-0.132071  intercept=33.925117
+    R2=0.0030  p=6.2650e-239  SE=0.003998  ***
+  Decay Rate  (n=360393):
+    slope=-0.032170  intercept=-2.122607
+    R2=0.2108  p=0.0000e+00  SE=0.000104  ***
 
 ============================================================
   3. SUMMARY
 ============================================================
   Significance codes: *** p<0.001  ** p<0.01  * p<0.05  ns=not significant
+  Growth rate > 0 means the post gained interactions rapidly before peak.
+  Decay rate < 0 means the post lost interactions after peak (expected).
+  A positive rho on decay rate means slower decay (less negative slope)
+  for higher interest-value posts, i.e. they sustain engagement longer.
   Refer to generated plots for visual confirmation.

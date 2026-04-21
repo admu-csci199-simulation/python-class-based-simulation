@@ -4,7 +4,7 @@ import Constants
 
 INPUT_FOLDER = "input"
 SCRIPT_NAME = "Main.py"
-SEEDS = list(range( 30))
+SEEDS = list(range(10))
 INPUT_CONFIG_PREFIX = "hyp9"
 
 def main():
