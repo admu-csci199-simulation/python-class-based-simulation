@@ -147,9 +147,9 @@ def generate_heatmap(df, metric, title, out_path):
     for x, color in [(red_end, "#d62728"), (blue_start, "#1f77b4")]:
         ax.axvline(x=x, color=color, linewidth=1.5, linestyle="--", alpha=0.6)
 
-    ax.text(red_end / 2,                -0.6, "Red camp", ha="center", color="#d62728",  fontsize=9, transform=ax.transData)
-    ax.text((red_end + blue_start) / 2, -0.6, "Centrist", ha="center", color="#555555",  fontsize=9, transform=ax.transData)
-    ax.text((blue_start + n_cols) / 2,  -0.6, "Blue camp", ha="center", color="#1f77b4", fontsize=9, transform=ax.transData)
+    ax.text(red_end / 2,                -0.2, "Red camp", ha="center", color="#d62728",  fontsize=9, transform=ax.transData)
+    ax.text((red_end + blue_start) / 2, -0.2, "Centrist", ha="center", color="#555555",  fontsize=9, transform=ax.transData)
+    ax.text((blue_start + n_cols) / 2,  -0.2, "Blue camp", ha="center", color="#1f77b4", fontsize=9, transform=ax.transData)
 
     plt.tight_layout()
     plt.savefig(out_path, dpi=150, bbox_inches="tight")
