@@ -18,6 +18,7 @@ import json
 import re
 import argparse
 import csv
+import math
 from scipy.stats import linregress
 
 AGENT_DISTRIBUTIONS = [
@@ -64,8 +65,11 @@ def compute_rates(interaction_array):
     Growth rate is 0 if the post peaked immediately (first_active == peak).
     OLS requires at least 2 points; single-point phases default to 0.
     """
-    # Collapse to a 1D timeseries
-    series = [sum(t) for t in interaction_array]
+    # Collapse cumulative timeseries to per-timestep interaction counts
+    # by differencing consecutive values. The raw data is cumulative so
+    # we must differentiate to get actual new interactions per timestep.
+    cumulative = [sum(t) for t in interaction_array]
+    series = [0] + [max(0, cumulative[i] - cumulative[i - 1]) for i in range(1, len(cumulative))]
 
     if sum(series) == 0:
         return 0.0, 0.0
@@ -78,26 +82,33 @@ def compute_rates(interaction_array):
         window = series[max(0, i - half): min(n, i + half + 1)]
         smoothed.append(sum(window) / len(window))
 
-    # First and last active timestep
+    # First and last active timestep (on differentiated series)
     first_active = next(i for i, v in enumerate(series) if v > 0)
     last_active  = max(i for i, v in enumerate(series) if v > 0)
 
-    # Global peak on smoothed series
+    # Global peak on smoothed differentiated series
     peak_idx = max(range(first_active, last_active + 1), key=lambda i: smoothed[i])
 
-    # Growth rate: OLS slope over [first_active, peak_idx]
+    # Growth rate: OLS slope over log(y+1) from [first_active, peak_idx]
+    # Log-transforming before OLS captures proportional rate of change per
+    # timestep, which better suits the non-linear nature of spread dynamics.
+    # Guard: need >= 2 points and non-constant values for linregress to work.
     growth_segment = series[first_active: peak_idx + 1]
-    if len(growth_segment) >= 2:
-        x = list(range(len(growth_segment)))
-        growth_rate = linregress(x, growth_segment).slope
+    log_growth = [math.log1p(v) for v in growth_segment]
+    if len(log_growth) >= 2 and len(set(log_growth)) > 1:
+        x = list(range(len(log_growth)))
+        slope = linregress(x, log_growth).slope
+        growth_rate = 0.0 if (slope != slope) else slope  # nan check
     else:
         growth_rate = 0.0
 
-    # Decay rate: absolute OLS slope over [peak_idx, last_active]
+    # Decay rate: absolute OLS slope over log(y+1) from [peak_idx, last_active]
     decay_segment = series[peak_idx: last_active + 1]
-    if len(decay_segment) >= 2:
-        x = list(range(len(decay_segment)))
-        decay_rate = abs(linregress(x, decay_segment).slope)
+    log_decay = [math.log1p(v) for v in decay_segment]
+    if len(log_decay) >= 2 and len(set(log_decay)) > 1:
+        x = list(range(len(log_decay)))
+        slope = linregress(x, log_decay).slope
+        decay_rate = 0.0 if (slope != slope) else abs(slope)  # nan check
     else:
         decay_rate = 0.0
 

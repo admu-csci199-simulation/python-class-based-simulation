@@ -6,30 +6,30 @@ Seeds included    : [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int6
 ============================================================
 
 [Post Belief Value]
-  Sum of Squares : 14433.7397
+  Sum of Squares : 4.1882
   df             : 8
-  F-statistic    : 1470.1073
-  p-value        : 0.0000e+00  ***
-  eta2 (effect)  : 0.0257  (small)
+  F-statistic    : 27.3657
+  p-value        : 6.9703e-43  ***
+  eta2 (effect)  : 0.0006  (negligible)
 
 [Agent Distribution]
-  Sum of Squares : 920.7908
+  Sum of Squares : 3.2465
   df             : 9
-  F-statistic    : 83.3640
-  p-value        : 2.0214e-155  ***
-  eta2 (effect)  : 0.0016  (negligible)
+  F-statistic    : 18.8557
+  p-value        : 7.4221e-32  ***
+  eta2 (effect)  : 0.0005  (negligible)
 
 [Interaction (Belief x Distribution)]
-  Sum of Squares : 16842.3085
+  Sum of Squares : 959.3088
   df             : 72
-  F-statistic    : 190.6028
+  F-statistic    : 696.4507
   p-value        : 0.0000e+00  ***
-  eta2 (effect)  : 0.0300  (small)
+  eta2 (effect)  : 0.1354  (medium)
 
 [Residual]
-  Sum of Squares : 264243.3470
-  df             : 215310
-  eta2 (effect)  : 0.4713  (large)
+  Sum of Squares : 3058.1135
+  df             : 159852
+  eta2 (effect)  : 0.4318  (large)
 
 ============================================================
 Significance codes: *** p<0.001  ** p<0.01  * p<0.05
@@ -45,30 +45,30 @@ Seeds included    : [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int6
 ============================================================
 
 [Post Belief Value]
-  Sum of Squares : 20069.2765
+  Sum of Squares : 1.3101
   df             : 8
-  F-statistic    : 1209.0277
-  p-value        : 0.0000e+00  ***
-  eta2 (effect)  : 0.0215  (small)
+  F-statistic    : 110.9553
+  p-value        : 6.4303e-186  ***
+  eta2 (effect)  : 0.0020  (negligible)
 
 [Agent Distribution]
-  Sum of Squares : 1208.9117
+  Sum of Squares : 0.2869
   df             : 9
-  F-statistic    : 64.7361
-  p-value        : 1.6452e-119  ***
-  eta2 (effect)  : 0.0013  (negligible)
+  F-statistic    : 21.6006
+  p-value        : 5.1304e-37  ***
+  eta2 (effect)  : 0.0004  (negligible)
 
 [Interaction (Belief x Distribution)]
-  Sum of Squares : 17406.9427
+  Sum of Squares : 3.0590
   df             : 72
-  F-statistic    : 116.5157
+  F-statistic    : 28.7853
   p-value        : 0.0000e+00  ***
-  eta2 (effect)  : 0.0187  (small)
+  eta2 (effect)  : 0.0048  (negligible)
 
 [Residual]
-  Sum of Squares : 446755.2655
+  Sum of Squares : 317.7889
   df             : 215310
-  eta2 (effect)  : 0.4793  (large)
+  eta2 (effect)  : 0.4964  (large)
 
 ============================================================
 Significance codes: *** p<0.001  ** p<0.01  * p<0.05
