@@ -21,8 +21,10 @@ from collections import defaultdict
 #  CONSTANTS
 # ─────────────────────────────────────────────────────────────────────────────
 
-OUTPUT_DIR  = "output"
-PLOTS_DIR   = "plots"
+SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
+INPUT_DIR   = os.path.join(SCRIPT_DIR, "input")
+OUTPUT_DIR  = os.path.join(SCRIPT_DIR, "output")
+PLOTS_DIR   = os.path.join(SCRIPT_DIR, "plots")
 NUM_CONFIGS = 100
 NUM_SEEDS   = 100
 
@@ -41,29 +43,36 @@ CAMP_COLOURS = {
 #  DATA LOADING
 # ─────────────────────────────────────────────────────────────────────────────
 
-def load_runs(output_dir, num_configs, num_seeds):
+def load_runs(input_dir, output_dir, num_configs, num_seeds):
     """
-    Load simulationData from output files.
-    Also reads Metadata embedded in the same output file if present,
-    or falls back to defaults.
+    Joins Metadata from the input config file with simulationData from the
+    output file on (config_num, seed_num).
     Returns a list of dicts, one per run that loaded cleanly.
     """
     runs = []
+    skipped_missing = 0
+    skipped_bad_posts = 0
+
     for config_num in range(num_configs):
         for seed_num in range(num_seeds):
+            config_path = os.path.join(input_dir,  f"hyp12-config-{config_num}.json")
             output_path = os.path.join(output_dir, f"hyp12-config-{config_num}s-{seed_num}.json")
 
-            if not os.path.exists(output_path):
+            if not os.path.exists(config_path) or not os.path.exists(output_path):
+                skipped_missing += 1
                 continue
 
+            with open(config_path) as f:
+                config = json.load(f)
             with open(output_path) as f:
                 sim = json.load(f)
 
-            meta = sim.get("Metadata", {})
+            meta = config.get("Metadata", {})
 
             # simulationData stores postID as string keys after json round-trip
             posts = sim.get("posts", {})
             if "0" not in posts or "1" not in posts:
+                skipped_bad_posts += 1
                 continue
 
             runs.append({
@@ -88,6 +97,9 @@ def load_runs(output_dir, num_configs, num_seeds):
             "contested":                 sim.get("contested_agents", {}),
         })
 
+    print(f"Loaded:          {len(runs)} runs")
+    print(f"Skipped missing: {skipped_missing} (config or output file not found)")
+    print(f"Skipped bad:     {skipped_bad_posts} (output missing post 0 or post 1)")
     return runs
 
 
@@ -650,9 +662,23 @@ def generate_summary(runs):
 def main():
     os.makedirs(PLOTS_DIR, exist_ok=True)
 
-    runs = load_runs(OUTPUT_DIR, NUM_CONFIGS, NUM_SEEDS)
+    print(f"Script dir:  {SCRIPT_DIR}")
+    print(f"Input dir:   {INPUT_DIR}  (exists: {os.path.exists(INPUT_DIR)})")
+    print(f"Output dir:  {OUTPUT_DIR}  (exists: {os.path.exists(OUTPUT_DIR)})")
+
+    # Print the first few files found in each folder so we can verify the naming pattern
+    for label, folder in [("input", INPUT_DIR), ("output", OUTPUT_DIR)]:
+        if os.path.exists(folder):
+            files = os.listdir(folder)[:5]
+            print(f"  First files in {label}/: {files}")
+        else:
+            print(f"  {label}/ folder not found")
+
+    runs = load_runs(INPUT_DIR, OUTPUT_DIR, NUM_CONFIGS, NUM_SEEDS)
 
     if not runs:
+        print(f"No runs loaded. Check that '{INPUT_DIR}' and '{OUTPUT_DIR}' exist and contain the expected files.")
+        print(f"Expected pattern: {INPUT_DIR}/hyp1-config-{{config_num}}s-{{seed_num}}.json")
         return
 
     plot_interaction_race(runs, PLOTS_DIR)
