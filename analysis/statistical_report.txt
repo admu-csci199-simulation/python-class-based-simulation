@@ -1,8 +1,8 @@
 ============================================================
   VIRALITY HYPOTHESIS ANALYSIS - STATISTICAL REPORT
-  Total records in summary : 360756
-  Posts with nonzero growth rate  : 360574
-  Posts with nonzero decay rate   : 360393
+  Total records in summary : 602436
+  Posts with nonzero growth rate  : 602134
+  Posts with nonzero decay rate   : 601722
 ============================================================
 
 ============================================================
@@ -13,10 +13,10 @@
   Only posts where the metric is nonzero are included (active posts only).
   H0: No monotonic relationship between interest_value and the metric.
 
-  Growth Rate  (n=360574):
-    rho=+0.0481  p=8.9393e-184  ***
-  Decay Rate  (n=360393):
-    rho=-0.3558  p=0.0000e+00  ***
+  Growth Rate  (n=602134):
+    rho=+0.0580  p=0.0000e+00  ***
+  Decay Rate  (n=601722):
+    rho=-0.3640  p=0.0000e+00  ***
 
 ============================================================
   2. LINEAR REGRESSION - Interest Value -> Virality Metrics
@@ -25,12 +25,12 @@
   Only posts where the metric is nonzero are included (active posts only).
   H0: slope = 0 (no linear effect).
 
-  Growth Rate  (n=360574):
-    slope=-0.132071  intercept=33.925117
-    R2=0.0030  p=6.2650e-239  SE=0.003998  ***
-  Decay Rate  (n=360393):
-    slope=-0.032170  intercept=-2.122607
-    R2=0.2108  p=0.0000e+00  SE=0.000104  ***
+  Growth Rate  (n=602134):
+    slope=-0.120807  intercept=33.538333
+    R2=0.0026  p=0.0000e+00  SE=0.003069  ***
+  Decay Rate  (n=601722):
+    slope=-0.031192  intercept=-2.145516
+    R2=0.2055  p=0.0000e+00  SE=0.000079  ***
 
 ============================================================
   3. SUMMARY

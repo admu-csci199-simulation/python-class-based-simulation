@@ -89,7 +89,7 @@ for test_case in range(test_cases):
     conf_data = {}
     conf_data["Agents"] = generate_agents(num_agents)
     conf_data["Posts"] = []
-    post_count = 300
+    post_count = 40
 
     post_id = 0
     for post in range(post_count):
