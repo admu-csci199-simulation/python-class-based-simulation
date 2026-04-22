@@ -36,79 +36,163 @@ def mapGraphToAgents(agentsData, networkData):
     return agents
 
 
-def buildSimulationData(postsQueue):
+def buildSimulationData(postsQueue, configData):
     """
     Initialises the simulationData structure for all posts.
 
-    Per-post:
-      interactions_over_time    — interaction count at each absolute simulation
-                                  tick (length = MAXIMUM_TIME). Using absolute
-                                  time means both posts share the same x-axis,
-                                  making direct comparison straightforward.
-      interactions_by_belief_camp — how many interacting agents came from each
-                                  camp; reveals cross-camp reach.
-      total_interactions        — filled in after the simulation ends.
+    Per-post (posts):
+      interactions_over_time       — interaction count at each absolute simulation
+                                     tick (length = MAXIMUM_TIME).
+      interactions_by_belief_camp  — how many interacting agents came from each
+                                     belief camp.
+      total_interactions           — filled in after the simulation ends.
 
-    contested_agents — agents that received BOTH posts and had to choose.
-      Computed post-simulation from agent.receivedPosts vs agent.sharedPosts.
-      This is the cleanest "who won the fight" signal because it only counts
-      agents who genuinely faced a choice.
+    contested_agents:
+      Per-postID counts of agents that received ALL posts and chose to share
+      only that post. Also rolls up into misinfo_only / realnews_only / both /
+      neither for the campaign-level comparison.
+
+    misinfo_vs_realnews:
+      Aggregated view of the three-wave misinfo campaign vs. the single real
+      news post. Built entirely in post-simulation aggregation so the hot-path
+      in acceptPost() stays unchanged.
     """
+    # Identify which postIDs belong to misinfo and which to real news.
+    # These sets are used both here and in collectContestedAgents().
+    misinfo_ids   = set()
+    realnews_ids  = set()
+    for post in configData["Posts"]:
+        if post["misinformation"]:
+            misinfo_ids.add(post["postID"])
+        else:
+            realnews_ids.add(post["postID"])
+
     simulationData = {
+        # ── per-post granular data ────────────────────────────────────────────
         "posts": {
             p.postID: {
-                "interactions_over_time": [0] * Constants.MAXIMUM_TIME,
-                "interactions_by_belief_camp": {"red": 0, "centrist": 0, "blue": 0},
+                "interactions_over_time":   [0] * Constants.MAXIMUM_TIME,
+                "interactions_by_belief_camp": {
+                    "red": 0, "centrist": 0, "blue": 0
+                },
                 "total_interactions": 0,
             }
             for p in postsQueue
         },
+
+        # ── contested agents ─────────────────────────────────────────────────
+        # Per-postID: agents that received ALL posts and shared only that post.
+        # Campaign-level rollups are added after the per-postID counts are done.
         "contested_agents": {
-            "chose_post_0":  0,  # received both, shared only post 0
-            "chose_post_1":  0,  # received both, shared only post 1
-            "chose_both":    0,  # received both, shared both
-            "chose_neither": 0,  # received both, shared neither
+            **{f"chose_post_{p.postID}": 0 for p in postsQueue},
+            "chose_misinfo_only":  0,   # received all, shared ≥1 misinfo, 0 real news
+            "chose_realnews_only": 0,   # received all, shared ≥1 real news, 0 misinfo
+            "chose_both":          0,   # received all, shared from both sides
+            "chose_neither":       0,   # received all, shared nothing
         },
+
+        # ── campaign-level comparison (filled post-simulation) ────────────────
+        "misinfo_vs_realnews": {
+            "total_misinfo_interactions":   0,
+            "total_realnews_interactions":  0,
+            "misinfo_interactions_by_camp": {"red": 0, "centrist": 0, "blue": 0},
+            "realnews_interactions_by_camp":{"red": 0, "centrist": 0, "blue": 0},
+            "misinfo_combined_over_time":   [0] * Constants.MAXIMUM_TIME,
+            "realnews_over_time":           [0] * Constants.MAXIMUM_TIME,
+        },
+
+        # ── bookkeeping (not written to output, used internally) ─────────────
+        "_misinfo_ids":  list(misinfo_ids),
+        "_realnews_ids": list(realnews_ids),
     }
+
     return simulationData
 
 
 def collectContestedAgents(simulationData, agentsList, allPostIDs):
     """
     Walk every agent after the simulation ends and classify those who
-    received all competing posts into one of the four contest outcomes.
-    Only agents who were exposed to every post in the run are counted —
-    agents who only saw one post had no real choice to make.
+    received ALL posts into one of the contest outcomes.
+
+    Per-postID counts (chose_post_N):
+      Agent received all posts and shared ONLY that single post.
+
+    Campaign-level rollups:
+      chose_misinfo_only  — shared at least one misinfo post, zero real news
+      chose_realnews_only — shared at least one real news post, zero misinfo
+      chose_both          — shared from both sides
+      chose_neither       — shared nothing from the contested set
     """
-    allPostIDs = set(allPostIDs)
+    allPostIDs    = set(allPostIDs)
+    misinfo_ids   = set(simulationData["_misinfo_ids"])
+    realnews_ids  = set(simulationData["_realnews_ids"])
 
     for agent in agentsList:
         if agent.isNewsAgency:
             continue
 
-        # Skip agents that were not exposed to all posts
+        # Only count agents exposed to every post in the run
         if not allPostIDs.issubset(agent.receivedPosts):
             continue
 
-        sharedAll    = allPostIDs.issubset(agent.sharedPosts)
-        sharedNone   = agent.sharedPosts.isdisjoint(allPostIDs)
-        sharedPost0  = 0 in agent.sharedPosts
-        sharedPost1  = 1 in agent.sharedPosts
+        shared_misinfo   = misinfo_ids  & agent.sharedPosts
+        shared_realnews  = realnews_ids & agent.sharedPosts
+        shared_all_posts = allPostIDs   & agent.sharedPosts
 
-        if sharedAll:
+        # ── per-postID: shared exactly this one post and nothing else ─────────
+        for postID in allPostIDs:
+            if agent.sharedPosts & allPostIDs == {postID}:
+                simulationData["contested_agents"][f"chose_post_{postID}"] += 1
+
+        # ── campaign-level rollup ─────────────────────────────────────────────
+        has_misinfo  = len(shared_misinfo)  > 0
+        has_realnews = len(shared_realnews) > 0
+
+        if has_misinfo and has_realnews:
             simulationData["contested_agents"]["chose_both"] += 1
-        elif sharedNone:
+        elif has_misinfo:
+            simulationData["contested_agents"]["chose_misinfo_only"] += 1
+        elif has_realnews:
+            simulationData["contested_agents"]["chose_realnews_only"] += 1
+        else:
             simulationData["contested_agents"]["chose_neither"] += 1
-        elif sharedPost0:
-            simulationData["contested_agents"]["chose_post_0"] += 1
-        elif sharedPost1:
-            simulationData["contested_agents"]["chose_post_1"] += 1
+
+
+def aggregateMisinfoVsRealNews(simulationData):
+    """
+    Fills misinfo_vs_realnews by summing across the per-post data that
+    acceptPost() already populated during the simulation.
+
+    Kept separate from the simulation loop so the hot-path stays clean.
+    """
+    misinfo_ids  = set(simulationData["_misinfo_ids"])
+    realnews_ids = set(simulationData["_realnews_ids"])
+    mvr          = simulationData["misinfo_vs_realnews"]
+
+    for postID, postData in simulationData["posts"].items():
+        if postID in misinfo_ids:
+            mvr["total_misinfo_interactions"] += postData["total_interactions"]
+            for camp in ("red", "centrist", "blue"):
+                mvr["misinfo_interactions_by_camp"][camp] += (
+                    postData["interactions_by_belief_camp"][camp]
+                )
+            for t, count in enumerate(postData["interactions_over_time"]):
+                mvr["misinfo_combined_over_time"][t] += count
+
+        elif postID in realnews_ids:
+            mvr["total_realnews_interactions"] += postData["total_interactions"]
+            for camp in ("red", "centrist", "blue"):
+                mvr["realnews_interactions_by_camp"][camp] += (
+                    postData["interactions_by_belief_camp"][camp]
+                )
+            for t, count in enumerate(postData["interactions_over_time"]):
+                mvr["realnews_over_time"][t] += count
 
 
 def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.Agent]", agenciesList: "list[Agent.Agent]"):
     
     postsQueue = readPosts(configData, simulationAgentsList, agenciesList)
-    simulationData = buildSimulationData(postsQueue)
+    simulationData = buildSimulationData(postsQueue, configData)
     allPostIDs = [p.postID for p in postsQueue]
 
     for currentTime in range(Constants.MAXIMUM_TIME):
@@ -144,11 +228,16 @@ def simulationProper(configData, networkData, simulationAgentsList: "list[Agent.
             currentAgent = simulationAgentsList[agentID]
             currentAgent.addNewPostsToFeedQueue()
 
-    # ── post-simulation aggregation ──────────────────────────────────────
+    # ── post-simulation aggregation ───────────────────────────────────────────
     for postID, postData in simulationData["posts"].items():
         postData["total_interactions"] = sum(postData["interactions_over_time"])
 
     collectContestedAgents(simulationData, simulationAgentsList, allPostIDs)
+    aggregateMisinfoVsRealNews(simulationData)
+
+    # ── strip internal bookkeeping keys before writing output ─────────────────
+    simulationData.pop("_misinfo_ids",  None)
+    simulationData.pop("_realnews_ids", None)
 
     return simulationData
 

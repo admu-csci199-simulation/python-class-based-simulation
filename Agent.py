@@ -244,8 +244,13 @@ class Agent:
         self.feedQueue.clear()
 
     def acceptPost(self, networkData, time: int, post: "Post", layer: int, simulationData) -> None:
-        "Does all needed processes once an agent accepts the contents of a post"
-        
+        """
+        Does all needed processes once an agent accepts the contents of a post.
+
+        simulationData["posts"] is keyed by integer postID. The lookup uses
+        post.postID directly so it works for any number of posts regardless of
+        the hypothesis being run.
+        """
         if post.postID in self.sharedPosts:
             return
         
@@ -264,7 +269,9 @@ class Agent:
             )
         )
 
-        # Record interaction on the absolute simulation clock
+        # Record interaction in the per-post bucket using integer postID key.
+        # Both interactions_over_time and interactions_by_belief_camp are updated
+        # here; misinfo_vs_realnews aggregation happens post-simulation in Main.py.
         postData = simulationData["posts"][post.postID]
         postData["interactions_over_time"][time] += 1
         postData["interactions_by_belief_camp"][self.classifyAgentBelief()] += 1

@@ -4,7 +4,7 @@ import Constants
 
 INPUT_FOLDER = "input"
 SCRIPT_NAME = "Main.py"
-SEEDS = list(range(1, 100))
+SEEDS = list(range(30, 50))
 INPUT_CONFIG_PREFIX = "hyp12"
 
 def main():
@@ -31,3 +31,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
